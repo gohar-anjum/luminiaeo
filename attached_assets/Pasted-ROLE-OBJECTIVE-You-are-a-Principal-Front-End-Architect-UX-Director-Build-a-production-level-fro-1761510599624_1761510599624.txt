@@ -1,0 +1,377 @@
+ROLE & OBJECTIVE
+You are a Principal Front-End Architect & UX Director. Build a production-level front-end for LUMINI AEO (Answer Engine Optimization Platform for Generative AI), from scratch. The result must look like a commercial SaaS (think Ahrefs / Semrush / AnswerThePublic), be highly organized, and follow HCI principles.
+
+Tech: Prefer React + TypeScript with Vite and TailwindCSS. You may also use shadcn/ui (Radix UI) for quality components, Lucide for icons, Recharts for simple charts, and D3 for the clustering tree. No backend—use dummy data and mock APIs.
+
+Deliver a clean, responsive, accessible, professional app that a faculty panel would consider presentation-ready.
+
+1) Visual Identity & Design System (Professional)
+
+Brand: LUMINI AEO
+
+Avoid emojis. Use icons only (Lucide).
+
+Color Palette (professional & modern):
+
+Primary: #2563EB (Royal Blue)
+
+Primary Hover: #1E40AF
+
+Accent: #10B981 (Emerald)
+
+Neutral 900: #0F172A (Slate 900)
+
+Neutral 700: #334155
+
+Neutral 500: #64748B
+
+Surface: #FFFFFF
+
+Surface Alt: #F8FAFC
+
+Border: #E2E8F0
+
+Typography:
+
+Headings: Inter (600/700)
+
+Body: Inter (400/500)
+
+Line-height generous, clear hierarchy (H1/H2/H3, body, small).
+
+Layout: 8-pt spacing system; generous whitespace; card-based sections.
+
+Motion: Micro-interactions 200–250ms easing; no flashy animations.
+
+Dark Mode: Optional toggle; persist in localStorage.
+
+HCI Principles: Visibility (status/loading), Consistency (components), Feedback (toasts, disabled states), Error Prevention (validation), Aesthetic Minimalism, User Control, Accessibility (ARIA + keyboard).
+
+2) Information Architecture & Pages
+Public (Pre-Auth)
+
+Home /
+
+Hero (bold headline + subheading + CTA “Start Free Demo”).
+
+Three feature cards (Keyword Research, Semantic Score, AI Visibility) with clean icons.
+
+“How it works” 3-step strip; Trust strip (dummy logos).
+
+Testimonial slider (dummy).
+
+Footer with About, Contact, Features, Pricing, Privacy, Terms.
+
+About /about
+
+Mission, what LUMINI AEO solves (answer engines, AI visibility).
+
+3 team cards (photo, title, short bio).
+
+Timeline component (progress milestones).
+
+Contact /contact
+
+Form: Name, Email, Subject, Message (client validation).
+
+Success toast + reset; show email and office info.
+
+Auth
+
+Login /login: Email + Password, Remember me, Forgot password (dummy).
+
+Sign Up /signup: Name, Email, Password, Confirm; password strength meter + T&C checkbox.
+
+Professional forms, clear labels, error text, and disabled states.
+
+Authenticated (Post-Login)
+
+Global Shell:
+
+Topbar: product logo (left), search, help, notifications, user menu (right).
+
+Sidebar (VERY PROFESSIONAL, FULL, ORGANIZED):
+
+Overview
+
+Research
+
+Keyword Research
+
+FAQ / Facts Generator
+
+Content Intelligence
+
+Semantic Score Checker
+
+Semantic Content Generator
+
+AI Visibility
+
+AI Indexability & Citations
+
+Optimization
+
+Keyword Clustering (Tree)
+
+PBN Detector
+
+Meta Tag Optimizer
+
+Project / Settings
+
+Projects
+
+Billing (dummy)
+
+Settings
+
+Each group collapsible. Icons for every item. Active/hover states. Sidebar width stable; responsive collapse on smaller screens. No emojis.
+
+Dashboard /dashboard
+
+Do NOT overuse charts. Use four cards with compact visuals:
+
+Queries Analyzed (mini line)
+
+Avg. Semantic Score (circular gauge)
+
+AI Citation Share (mini donut)
+
+Meta Health (stacked bar small)
+
+“Recent Activity” list; “Pinned Reports” (links).
+
+Smooth skeleton loaders; tasteful shadows.
+
+Keyword Research /keyword
+
+Search bar (seed keyword), filters (locale, language, intent).
+
+Results table (Keyword, Volume, CPC, Competition, Intent).
+
+Top toolbar: Export CSV, Add to Cluster, Generate FAQs.
+
+One compact bar chart for top 10 keywords by volume (Recharts).
+
+Use dummy data; sort/filter client-side.
+
+FAQ / Facts Generator /faq
+
+Two-pane layout: Selected Questions (left) → Generated Answers (right).
+
+Editable answers; “Copy All”/“Download JSON”; Regenerate (dummy).
+
+Status chips (Pending / Ready).
+
+Semantic Score Checker /semantic
+
+URL input + “Analyze” (mock delay + skeleton).
+
+Cards: Meta Title/Desc, Key Entities, Topics Found.
+
+Score 0–100 (circular gauge).
+
+One pie chart for coverage; table of Missing Topics with suggestions.
+
+Export “Report” (dummy download).
+
+AI Indexability & Citations /visibility
+
+Inputs: Domain, choose Models (ChatGPT, Gemini, Perplexity).
+
+Top summary cards: Queries Checked, Pages Cited, Competitors Count.
+
+Two balanced charts only:
+
+Citation Share (pie)
+
+Competitor Comparison (bar)
+
+Professional table: Query | Cited? | Cited By | Top Competitors (with tooltips).
+
+Compact, grid-aligned; no oversized charts.
+
+Semantic Content Generator /content-generator
+
+Inputs: Prompt/Keyword, Tone (Formal/Neutral/Conversational), Target length.
+
+Output: Title, Intro, 3–5 sections (dummy text), CTA.
+
+Actions: Copy, Download .txt, Regenerate section.
+
+Keyword Clustering (Tree) /clustering
+
+Input: “Enter main keyword” → Generate Clusters.
+
+Tree visualization (D3 hierarchical collapsible tree):
+
+Root: Primary Keyword
+
+Level 1: Primary Cluster
+
+Level 2: Secondary Keywords
+
+Level 3: Sub-Secondary
+
+Accompanying table: Cluster | Primary | Secondary | Sub-Secondary (counts).
+
+Info tooltips; Export CSV.
+
+PBN Detector /pbn
+
+Input: Domain → Analyze (dummy).
+
+Professional table: Referring Domain | IP | DA | Spam | Risk (chip: Green/Yellow/Red)
+
+Summary: Total Backlinks, High-Risk Domains, Disavow candidates.
+
+Export disavow.txt (dummy).
+
+Meta Tag Optimizer /meta
+
+Input: URL → Scan (dummy).
+
+Show: Current Title/Description + status (✅ OK / ⚠️ Long / ❌ Missing).
+
+Suggested replacements (editable); “Preview Snippet” (Google-style).
+
+Copy & Download (JSON).
+
+Projects, Billing, Settings (dummy but polished)
+
+Projects: list with create/edit/delete (UI only).
+
+Billing: plan cards, usage bars.
+
+Settings: profile, security, theme.
+
+3) Interaction & UX Rules (HCI)
+
+No emojis. Clean icons only.
+
+Always show system status: skeleton loaders, progress bars, toasts.
+
+Clear empty states with helpful copy.
+
+Tables: sticky header, zebra rows, column sort, search filter.
+
+Forms: label + helper text + validation + disabled submit until valid.
+
+Charts: only where they communicate better than tables; never full-width unless needed.
+
+Keyboard navigation, focus rings, ARIA attributes, proper color contrast (WCAG AA).
+
+Responsive breakpoints:
+
+≥1440px desktop: comfortable spacing, 4-column card grid
+
+≥1024px laptop: 3 columns
+
+≥768px tablet: 2 columns, collapsed sidebar
+
+<768px mobile: single column, off-canvas sidebar
+
+4) Implementation Details & Libraries
+
+Scaffold: Vite + React + TypeScript
+
+Styling: TailwindCSS + shadcn/ui (Radix primitives)
+
+Icons: Lucide
+
+Charts: Recharts (simple), D3 (tree)
+
+State: Local state only; mock fetch with setTimeout
+
+Dummy Data: /src/data/* JSONs for each module
+
+No backend—but structure code so APIs can be plugged later.
+
+Folder Structure
+
+/src
+  /app              (routes or pages)
+    /public         (Home, About, Contact, Login, Signup)
+    /dashboard
+    /keyword
+    /faq
+    /semantic
+    /visibility
+    /content-generator
+    /clustering
+    /pbn
+    /meta
+    /projects
+    /billing
+    /settings
+  /components       (Navbar, Sidebar, Card, Table, Chart wrappers, TreeView, Forms, Toasts, Modals)
+  /data             (dummy JSON: keywords.json, faq.json, semantic.json, visibility.json, clusters.json, pbn.json, meta.json)
+  /styles           (globals.css, tailwind.css)
+  /utils            (formatters, mockFetch, validations)
+  /hooks            (useTheme, useSidebar, useMockApi)
+
+
+Key Components
+
+Sidebar.tsx (grouped sections, nested items, collapse, active states)
+
+NavBar.tsx (search, notifications, user menu, dark mode toggle)
+
+Card.tsx, StatCard.tsx, ChartCard.tsx
+
+DataTable.tsx (sortable, searchable)
+
+TreeView.tsx (D3 hierarchical tree)
+
+Toast.tsx, Modal.tsx
+
+FormInput.tsx, Select.tsx, TextArea.tsx
+
+SnippetPreview.tsx (Meta preview)
+
+5) Acceptance Criteria (DoD)
+
+Visual polish: Comparable to Ahrefs/Semrush—organized, clean, premium.
+
+Sidebar: Full, grouped, professional; collapsible; proper icons; no emojis.
+
+Home/About/Contact: Look like real marketing pages, not placeholders.
+
+Dashboard: 4 compact cards + recent activity + pinned; no oversized charts.
+
+Each Module Page: Has correct inputs, tables, and minimal necessary charts.
+
+Clustering: Working D3 tree with expand/collapse; table view + export.
+
+PBN Detector: Risk chips and disavow export (dummy).
+
+Meta Optimizer: Validations and live snippet preview.
+
+HCI & A11y: Visible states, ARIA, keyboard access, contrast checked.
+
+Responsive: Clean on desktop, laptop, tablet, and mobile.
+
+Code Quality: Typed components, modular structure, comments where needed.
+
+6) Data & Mocking
+
+Provide realistic dummy JSON for each module (10–50 rows).
+
+Create mockFetch(resource) that returns the JSON with a 600–900ms delay for realism.
+
+Use localStorage to simulate auth (logged-in session).
+
+7) What to Output
+
+A fully runnable project with the structure above.
+
+Complete pages, components, styles, and data files.
+
+Clear README with:
+
+npm i
+
+npm run dev
+
+Notes on where to plug real APIs later.
