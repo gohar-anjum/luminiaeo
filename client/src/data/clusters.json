@@ -1,0 +1,74 @@
+{
+  "name": "AI Search Optimization",
+  "children": [
+    {
+      "name": "Answer Engine Optimization",
+      "children": [
+        {
+          "name": "ChatGPT Optimization",
+          "children": [
+            { "name": "ChatGPT citation factors" },
+            { "name": "ChatGPT content formatting" },
+            { "name": "ChatGPT source credibility" }
+          ]
+        },
+        {
+          "name": "Gemini Optimization",
+          "children": [
+            { "name": "Gemini ranking signals" },
+            { "name": "Gemini entity recognition" },
+            { "name": "Gemini structured data" }
+          ]
+        },
+        {
+          "name": "Perplexity Optimization",
+          "children": [
+            { "name": "Perplexity citation metrics" },
+            { "name": "Perplexity source authority" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Semantic SEO",
+      "children": [
+        {
+          "name": "Entity Optimization",
+          "children": [
+            { "name": "entity schema markup" },
+            { "name": "entity relationships" },
+            { "name": "knowledge graph optimization" }
+          ]
+        },
+        {
+          "name": "Topic Clustering",
+          "children": [
+            { "name": "topic authority building" },
+            { "name": "semantic keyword research" },
+            { "name": "content hub strategy" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AI Visibility Tracking",
+      "children": [
+        {
+          "name": "Citation Monitoring",
+          "children": [
+            { "name": "citation frequency tracking" },
+            { "name": "citation quality analysis" },
+            { "name": "competitor citation comparison" }
+          ]
+        },
+        {
+          "name": "AI Indexability",
+          "children": [
+            { "name": "AI crawlability" },
+            { "name": "content accessibility for LLMs" }
+          ]
+        }
+      ]
+    }
+  ]
+}

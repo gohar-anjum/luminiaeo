@@ -1,0 +1,32 @@
+[
+  {
+    "id": "faq1",
+    "question": "What is Answer Engine Optimization?",
+    "answer": "Answer Engine Optimization (AEO) is the practice of optimizing content to appear in AI-generated responses from tools like ChatGPT, Google Gemini, and Perplexity AI. Unlike traditional SEO which focuses on search engine rankings, AEO ensures your content is cited and referenced by large language models when answering user queries.",
+    "status": "ready"
+  },
+  {
+    "id": "faq2",
+    "question": "How does AEO differ from traditional SEO?",
+    "answer": "While SEO focuses on ranking in search results, AEO focuses on being cited as a source by AI models. AEO emphasizes structured data, entity relationships, semantic relevance, and authoritative content that AI systems can understand and reference accurately.",
+    "status": "ready"
+  },
+  {
+    "id": "faq3",
+    "question": "Which AI models should I optimize for?",
+    "answer": "The primary AI models to optimize for include ChatGPT (OpenAI), Google Gemini (Google), Perplexity AI, Claude (Anthropic), and Microsoft Copilot. Each has different citation preferences and content requirements.",
+    "status": "pending"
+  },
+  {
+    "id": "faq4",
+    "question": "What are the key ranking factors for AI citations?",
+    "answer": "Key factors include content freshness, topical authority, entity recognition, structured data markup, semantic relevance, source credibility, and clear, concise answers to common questions.",
+    "status": "ready"
+  },
+  {
+    "id": "faq5",
+    "question": "How can I track my AI visibility?",
+    "answer": "Use specialized AEO tools to monitor when your domain is cited by AI models, track citation frequency across different queries, compare against competitors, and identify opportunities for improvement.",
+    "status": "ready"
+  }
+]

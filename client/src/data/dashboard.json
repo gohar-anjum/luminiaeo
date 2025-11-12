@@ -1,0 +1,77 @@
+{
+  "metrics": {
+    "queriesAnalyzed": {
+      "value": 12847,
+      "trend": [8200, 8900, 9500, 10200, 10800, 11400, 12000, 12847]
+    },
+    "avgSemanticScore": {
+      "value": 78,
+      "change": 5.2
+    },
+    "aiCitationShare": {
+      "value": 34,
+      "breakdown": [
+        { "name": "ChatGPT", "value": 45 },
+        { "name": "Gemini", "value": 32 },
+        { "name": "Perplexity", "value": 23 }
+      ]
+    },
+    "metaHealth": {
+      "value": 85,
+      "breakdown": [
+        { "name": "Optimized", "value": 68 },
+        { "name": "Warning", "value": 20 },
+        { "name": "Missing", "value": 12 }
+      ]
+    }
+  },
+  "recentActivity": [
+    {
+      "id": "act1",
+      "type": "Keyword Analysis",
+      "description": "Analyzed 245 keywords for \"AI marketing\" cluster",
+      "timestamp": "2024-10-26T14:30:00Z"
+    },
+    {
+      "id": "act2",
+      "type": "Semantic Score",
+      "description": "Improved score for example.com/ai-guide from 72 to 85",
+      "timestamp": "2024-10-26T12:15:00Z"
+    },
+    {
+      "id": "act3",
+      "type": "Citation Tracking",
+      "description": "Detected new ChatGPT citation for your content",
+      "timestamp": "2024-10-26T10:45:00Z"
+    },
+    {
+      "id": "act4",
+      "type": "Meta Optimization",
+      "description": "Optimized 12 meta tags across your domain",
+      "timestamp": "2024-10-26T09:20:00Z"
+    },
+    {
+      "id": "act5",
+      "type": "Content Generation",
+      "description": "Generated semantic content for \"LLM optimization\"",
+      "timestamp": "2024-10-25T16:50:00Z"
+    }
+  ],
+  "pinnedReports": [
+    {
+      "id": "rpt1",
+      "title": "Monthly AI Visibility Report",
+      "date": "Oct 2024"
+    },
+    {
+      "id": "rpt2",
+      "title": "Top Performing Keywords",
+      "date": "Oct 2024"
+    },
+    {
+      "id": "rpt3",
+      "title": "Competitor Analysis: AI Search",
+      "date": "Sep 2024"
+    }
+  ]
+}

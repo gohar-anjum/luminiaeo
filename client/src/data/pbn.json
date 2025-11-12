@@ -1,0 +1,82 @@
+[
+  {
+    "id": "pbn1",
+    "referringDomain": "quality-links.com",
+    "ip": "192.168.1.45",
+    "da": 42,
+    "spam": 8,
+    "risk": "low"
+  },
+  {
+    "id": "pbn2",
+    "referringDomain": "seo-boost-network.net",
+    "ip": "192.168.1.46",
+    "da": 35,
+    "spam": 65,
+    "risk": "high"
+  },
+  {
+    "id": "pbn3",
+    "referringDomain": "authority-builder.org",
+    "ip": "192.168.1.47",
+    "da": 28,
+    "spam": 72,
+    "risk": "high"
+  },
+  {
+    "id": "pbn4",
+    "referringDomain": "genuine-resource.com",
+    "ip": "10.0.0.12",
+    "da": 58,
+    "spam": 5,
+    "risk": "low"
+  },
+  {
+    "id": "pbn5",
+    "referringDomain": "link-exchange-pro.net",
+    "ip": "192.168.1.46",
+    "da": 31,
+    "spam": 48,
+    "risk": "medium"
+  },
+  {
+    "id": "pbn6",
+    "referringDomain": "content-authority.io",
+    "ip": "172.16.0.8",
+    "da": 65,
+    "spam": 3,
+    "risk": "low"
+  },
+  {
+    "id": "pbn7",
+    "referringDomain": "quick-rankings.biz",
+    "ip": "192.168.1.48",
+    "da": 22,
+    "spam": 82,
+    "risk": "high"
+  },
+  {
+    "id": "pbn8",
+    "referringDomain": "trusted-news-blog.com",
+    "ip": "203.0.113.5",
+    "da": 51,
+    "spam": 12,
+    "risk": "low"
+  },
+  {
+    "id": "pbn9",
+    "referringDomain": "fast-seo-results.co",
+    "ip": "192.168.1.46",
+    "da": 26,
+    "spam": 55,
+    "risk": "medium"
+  },
+  {
+    "id": "pbn10",
+    "referringDomain": "editorial-links.net",
+    "ip": "198.51.100.20",
+    "da": 47,
+    "spam": 18,
+    "risk": "low"
+  }
+]

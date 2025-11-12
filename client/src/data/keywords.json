@@ -1,0 +1,82 @@
+[
+  {
+    "id": "kw1",
+    "keyword": "answer engine optimization",
+    "volume": 2400,
+    "cpc": 12.50,
+    "competition": "High",
+    "intent": "Informational"
+  },
+  {
+    "id": "kw2",
+    "keyword": "AI search visibility",
+    "volume": 1800,
+    "cpc": 10.25,
+    "competition": "Medium",
+    "intent": "Commercial"
+  },
+  {
+    "id": "kw3",
+    "keyword": "ChatGPT SEO",
+    "volume": 5200,
+    "cpc": 15.75,
+    "competition": "High",
+    "intent": "Commercial"
+  },
+  {
+    "id": "kw4",
+    "keyword": "semantic content optimization",
+    "volume": 980,
+    "cpc": 8.90,
+    "competition": "Low",
+    "intent": "Informational"
+  },
+  {
+    "id": "kw5",
+    "keyword": "generative AI marketing",
+    "volume": 3600,
+    "cpc": 14.20,
+    "competition": "High",
+    "intent": "Commercial"
+  },
+  {
+    "id": "kw6",
+    "keyword": "Perplexity AI citations",
+    "volume": 720,
+    "cpc": 6.50,
+    "competition": "Low",
+    "intent": "Informational"
+  },
+  {
+    "id": "kw7",
+    "keyword": "Google Gemini optimization",
+    "volume": 1560,
+    "cpc": 11.30,
+    "competition": "Medium",
+    "intent": "Commercial"
+  },
+  {
+    "id": "kw8",
+    "keyword": "AI content strategy",
+    "volume": 2900,
+    "cpc": 9.80,
+    "competition": "Medium",
+    "intent": "Transactional"
+  },
+  {
+    "id": "kw9",
+    "keyword": "entity-based SEO",
+    "volume": 640,
+    "cpc": 7.40,
+    "competition": "Low",
+    "intent": "Informational"
+  },
+  {
+    "id": "kw10",
+    "keyword": "LLM search ranking",
+    "volume": 1120,
+    "cpc": 10.90,
+    "competition": "Medium",
+    "intent": "Informational"
+  }
+]

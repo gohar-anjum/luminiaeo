@@ -1,0 +1,50 @@
+[
+  {
+    "query": "How to optimize for AI search engines",
+    "cited": true,
+    "citedBy": ["ChatGPT", "Perplexity"],
+    "topCompetitors": ["semrush.com", "moz.com", "ahrefs.com"]
+  },
+  {
+    "query": "Best practices for AEO in 2024",
+    "cited": true,
+    "citedBy": ["Gemini", "ChatGPT"],
+    "topCompetitors": ["searchenginejournal.com", "searchengineland.com"]
+  },
+  {
+    "query": "Answer engine optimization vs SEO",
+    "cited": false,
+    "citedBy": [],
+    "topCompetitors": ["hubspot.com", "neilpatel.com", "backlinko.com"]
+  },
+  {
+    "query": "How AI models cite sources",
+    "cited": true,
+    "citedBy": ["ChatGPT"],
+    "topCompetitors": ["openai.com", "anthropic.com"]
+  },
+  {
+    "query": "Semantic search optimization techniques",
+    "cited": true,
+    "citedBy": ["Gemini", "Perplexity", "ChatGPT"],
+    "topCompetitors": ["contentmarketinginstitute.com", "copyblogger.com"]
+  },
+  {
+    "query": "What is entity-based SEO",
+    "cited": false,
+    "citedBy": [],
+    "topCompetitors": ["wordstream.com", "searchenginewatch.com"]
+  },
+  {
+    "query": "How to improve AI citation rate",
+    "cited": true,
+    "citedBy": ["Perplexity"],
+    "topCompetitors": ["contentking.com", "oncrawl.com"]
+  },
+  {
+    "query": "LLM content optimization strategy",
+    "cited": false,
+    "citedBy": [],
+    "topCompetitors": ["marketingprofs.com", "convinceandconvert.com"]
+  }
+]
