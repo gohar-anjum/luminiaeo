@@ -1,10 +1,8 @@
-// Email validation
 export function isValidEmail(email: string): boolean {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return re.test(email);
 }
 
-// Password strength
 export function getPasswordStrength(password: string): {
   score: number;
   label: string;
@@ -29,7 +27,6 @@ export function getPasswordStrength(password: string): {
   return { score: 100, label: "Very Strong", color: "bg-success" };
 }
 
-// URL validation
 export function isValidUrl(url: string): boolean {
   try {
     new URL(url);

@@ -1,17 +1,22 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { mockFetch } from "@/utils/mockFetch";
-import dashboardData from "@/data/dashboard.json";
 import { formatNumber, formatRelativeTime } from "@/utils/formatters";
 import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer } from "recharts";
 import { TrendingUp, BarChart3, Eye, Tag } from "lucide-react";
 import { Link } from "wouter";
+import { registerMockData } from "@/lib/queryClient";
+import dashboardData from "@/data/dashboard.json";
+import { useEffect } from "react";
 
 export default function Dashboard() {
-  const { data, isLoading } = useQuery({
+  // Register mock data for this endpoint
+  useEffect(() => {
+    registerMockData("/api/dashboard", async () => dashboardData);
+  }, []);
+
+  const { data, isLoading } = useQuery<typeof dashboardData>({
     queryKey: ["/api/dashboard"],
-    queryFn: () => mockFetch(dashboardData),
   });
 
   if (isLoading) {
@@ -69,7 +74,7 @@ export default function Dashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(metrics?.queriesAnalyzed.value)}</div>
+            <div className="text-2xl font-bold">{formatNumber(metrics?.queriesAnalyzed.value || 0)}</div>
             <div className="h-12 mt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData}>

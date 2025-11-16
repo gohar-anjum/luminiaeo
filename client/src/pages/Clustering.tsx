@@ -12,11 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
-import { mockFetch } from "@/utils/mockFetch";
-import clustersData from "@/data/clusters.json";
 import { Download, Network } from "lucide-react";
 import * as d3 from "d3";
 import { useToast } from "@/hooks/use-toast";
+import { registerMockData } from "@/lib/queryClient";
+import clustersData from "@/data/clusters.json";
 
 export default function Clustering() {
   const { toast } = useToast();
@@ -25,9 +25,13 @@ export default function Clustering() {
   const [showResults, setShowResults] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  // Register mock data for this endpoint
+  useEffect(() => {
+    registerMockData("/api/clusters", async () => clustersData);
+  }, []);
+
   const { data, isLoading } = useQuery({
     queryKey: ["/api/clusters"],
-    queryFn: () => mockFetch(clustersData),
     enabled: showResults,
   });
 

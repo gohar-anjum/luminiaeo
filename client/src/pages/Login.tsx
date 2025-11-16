@@ -33,6 +33,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await login(email, password);
+      await new Promise(resolve => setTimeout(resolve, 100));
       setLocation("/dashboard");
     } catch (error) {
       toast({
@@ -94,21 +95,6 @@ export default function Login() {
                 placeholder="Enter your password"
                 data-testid="input-password"
               />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="remember"
-                checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                data-testid="checkbox-remember"
-              />
-              <Label
-                htmlFor="remember"
-                className="text-sm font-normal cursor-pointer"
-              >
-                Remember me
-              </Label>
             </div>
 
             <Button

@@ -13,11 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useQuery } from "@tanstack/react-query";
-import { mockFetch } from "@/utils/mockFetch";
-import pbnData from "@/data/pbn.json";
 import { Search, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { getApiUrl } from "@/lib/apiConfig";
 
 export default function PBNDetector() {
   const { toast } = useToast();
@@ -25,11 +24,10 @@ export default function PBNDetector() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["/api/pbn"],
-    queryFn: () => mockFetch(pbnData),
-    enabled: showResults,
-  });
+  const [pbnData, setPbnData] = useState<any[]>([]);
+  const [pbnSummary, setPbnSummary] = useState<any>(null);
+  const [backlinksSummary, setBacklinksSummary] = useState<any>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleAnalyze = async () => {
     if (!domain) {
@@ -42,20 +40,145 @@ export default function PBNDetector() {
     }
 
     setIsAnalyzing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsAnalyzing(false);
-    setShowResults(true);
+    try {
+      const res = await apiRequest("POST", getApiUrl("/api/seo/backlinks/submit"), { domain });
+      const response = await res.json();
+      
+      if (response.response && response.response.pbn_detection) {
+        const pbnDetection = response.response.pbn_detection;
+        
+        const mappedItems = (pbnDetection.items || []).map((item: any, index: number) => ({
+          id: `pbn-${index}`,
+          referringDomain: item.source_url || "",
+          ip: item.signals?.ip || "",
+          da: item.signals?.domain_rank || 0,
+          spam: item.signals?.backlink_spam_score || 0,
+          risk: item.risk_level || "low",
+          pbnProbability: item.pbn_probability || 0,
+          domainRank: item.signals?.domain_rank || 0,
+        }));
+        
+        const riskPriority: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
+        const sortedItems = mappedItems.sort((a: any, b: any) => {
+          const riskDiff = riskPriority[b.risk] - riskPriority[a.risk];
+          if (riskDiff !== 0) return riskDiff;
+          return b.pbnProbability - a.pbnProbability;
+        });
+        
+        setPbnData(sortedItems);
+        setPbnSummary(pbnDetection.summary || null);
+        setBacklinksSummary(response.response.summary || null);
+        setShowResults(true);
+      } else {
+        setPbnData(Array.isArray(response) ? response : []);
+        setPbnSummary(null);
+        setBacklinksSummary(null);
+        setShowResults(true);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to analyze domain",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
-  const handleExportDisavow = () => {
-    toast({
-      title: "Export started",
-      description: "Downloading disavow.txt file...",
-    });
+  const handleExportDisavow = async () => {
+    if (!domain) {
+      toast({
+        title: "Error",
+        description: "Please analyze a domain first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      toast({
+        title: "Exporting...",
+        description: "Generating disavow.txt file...",
+      });
+
+      const res = await apiRequest("POST", getApiUrl("/api/seo/backlinks/harmful"), {
+        domain,
+        risk_levels: ["high", "critical"],
+      });
+
+      const response = await res.json();
+
+      if (response.response && response.response.backlinks) {
+        const backlinks = response.response.backlinks;
+        
+        if (backlinks.length === 0) {
+          toast({
+            title: "No harmful backlinks",
+            description: "No high or critical risk backlinks found to disavow",
+            variant: "default",
+          });
+          return;
+        }
+
+        const domains = new Set<string>();
+        backlinks.forEach((backlink: any) => {
+          if (backlink.source_domain) {
+            domains.add(backlink.source_domain);
+          } else if (backlink.source_url) {
+            try {
+              const url = new URL(backlink.source_url);
+              domains.add(url.hostname.replace(/^www\./, ""));
+            } catch {
+              if (backlink.source_url) {
+                domains.add(backlink.source_url);
+              }
+            }
+          }
+        });
+
+        const disavowContent = Array.from(domains)
+          .sort()
+          .map((domain) => `Domain: ${domain}`)
+          .join("\n");
+
+        const blob = new Blob([disavowContent], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "disavow.txt";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: "Success",
+          description: `Disavow file downloaded with ${domains.size} domains`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to generate disavow file",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to export disavow file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  const highRiskCount = data?.filter((d: any) => d.risk === "high").length || 0;
-  const mediumRiskCount = data?.filter((d: any) => d.risk === "medium").length || 0;
+  const highRiskCount = pbnSummary?.high_risk_count ?? (pbnData?.filter((d: any) => d.risk === "high").length || 0);
+  const mediumRiskCount = pbnSummary?.medium_risk_count ?? (pbnData?.filter((d: any) => d.risk === "medium").length || 0);
+  const lowRiskCount = pbnSummary?.low_risk_count ?? (pbnData?.filter((d: any) => d.risk === "low").length || 0);
+  const totalBacklinks = backlinksSummary?.backlinks ?? pbnData.length;
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
@@ -123,7 +246,7 @@ export default function PBNDetector() {
         </div>
       )}
 
-      {showResults && !isLoading && data && (
+      {showResults && pbnData && pbnData.length > 0 && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card data-testid="card-total">
@@ -131,7 +254,7 @@ export default function PBNDetector() {
                 <CardTitle className="text-sm font-medium">Total Backlinks</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{data.length}</div>
+                <div className="text-3xl font-bold">{totalBacklinks.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground mt-1">Referring domains analyzed</p>
               </CardContent>
             </Card>
@@ -158,9 +281,13 @@ export default function PBNDetector() {
           </div>
 
           <div className="flex justify-end">
-            <Button onClick={handleExportDisavow} data-testid="button-export-disavow">
+            <Button 
+              onClick={handleExportDisavow} 
+              disabled={isExporting}
+              data-testid="button-export-disavow"
+            >
               <Download className="w-4 h-4 mr-2" />
-              Export disavow.txt
+              {isExporting ? "Exporting..." : "Export disavow.txt"}
             </Button>
           </div>
 
@@ -175,18 +302,33 @@ export default function PBNDetector() {
                     <TableRow>
                       <TableHead>Referring Domain</TableHead>
                       <TableHead>IP Address</TableHead>
-                      <TableHead>DA</TableHead>
+                      <TableHead>Domain Rank</TableHead>
                       <TableHead>Spam Score</TableHead>
+                      <TableHead>PBN Probability</TableHead>
                       <TableHead>Risk Level</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.map((item: any) => (
+                    {pbnData.map((item: any) => (
                       <TableRow key={item.id} data-testid={`row-pbn-${item.id}`}>
-                        <TableCell className="font-medium">{item.referringDomain}</TableCell>
-                        <TableCell className="font-mono text-sm">{item.ip}</TableCell>
-                        <TableCell>{item.da}</TableCell>
-                        <TableCell>{item.spam}%</TableCell>
+                        <TableCell className="font-medium">
+                          <a 
+                            href={item.referringDomain} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {item.referringDomain}
+                          </a>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{item.ip || "N/A"}</TableCell>
+                        <TableCell>{item.da || item.domainRank || "N/A"}</TableCell>
+                        <TableCell>{item.spam || 0}</TableCell>
+                        <TableCell>
+                          <span className="font-medium">
+                            {(item.pbnProbability * 100).toFixed(1)}%
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <Badge
                             className={getRiskBadgeClass(item.risk)}

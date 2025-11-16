@@ -58,8 +58,13 @@ export default function Signup() {
 
     setIsLoading(true);
     try {
-      await signup(formData.name, formData.email, formData.password);
-      setLocation("/dashboard");
+      await signup(formData.name, formData.email, formData.password, formData.confirmPassword);
+      toast({
+        title: "Success",
+        description: "Account created successfully! Please login to continue.",
+        variant: "default",
+      });
+      setLocation("/login");
     } catch (error) {
       toast({
         title: "Error",

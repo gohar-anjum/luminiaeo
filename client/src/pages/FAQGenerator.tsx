@@ -6,19 +6,23 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
-import { mockFetch } from "@/utils/mockFetch";
-import faqsData from "@/data/faqs.json";
 import { Copy, Download, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { registerMockData } from "@/lib/queryClient";
+import faqsData from "@/data/faqs.json";
+import { useEffect } from "react";
 
 export default function FAQGenerator() {
   const { toast } = useToast();
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    registerMockData("/api/faqs", async () => faqsData);
+  }, []);
+
   const { data, isLoading } = useQuery({
     queryKey: ["/api/faqs"],
-    queryFn: () => mockFetch(faqsData),
   });
 
   const toggleQuestion = (id: string) => {
@@ -104,7 +108,6 @@ export default function FAQGenerator() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Questions List */}
         <Card data-testid="card-questions">
           <CardHeader>
             <CardTitle>Selected Questions</CardTitle>
@@ -139,7 +142,6 @@ export default function FAQGenerator() {
           </CardContent>
         </Card>
 
-        {/* Generated Answers */}
         <Card data-testid="card-answers">
           <CardHeader>
             <CardTitle>Generated Answers</CardTitle>

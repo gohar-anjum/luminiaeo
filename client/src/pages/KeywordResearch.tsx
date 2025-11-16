@@ -20,12 +20,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { mockFetch } from "@/utils/mockFetch";
-import keywordsData from "@/data/keywords.json";
 import { formatNumber, formatCurrency } from "@/utils/formatters";
 import { Search, Download, Plus, FileText, ArrowUpDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
+import { registerMockData } from "@/lib/queryClient";
+import keywordsData from "@/data/keywords.json";
+import { useEffect } from "react";
+
+type Keyword = {
+  id: string;
+  keyword: string;
+  volume: number;
+  cpc: number;
+  competition: string;
+  intent: string;
+};
 
 export default function KeywordResearch() {
   const { toast } = useToast();
@@ -33,15 +43,19 @@ export default function KeywordResearch() {
   const [locale, setLocale] = useState("us");
   const [language, setLanguage] = useState("en");
   const [intentFilter, setIntentFilter] = useState("all");
-  const [sortKey, setSortKey] = useState<keyof typeof keywordsData[0] | null>(null);
+  const [sortKey, setSortKey] = useState<keyof Keyword | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const { data, isLoading } = useQuery({
+  // Register mock data for this endpoint
+  useEffect(() => {
+    registerMockData("/api/keywords", async () => keywordsData);
+  }, []);
+
+  const { data, isLoading } = useQuery<Keyword[]>({
     queryKey: ["/api/keywords"],
-    queryFn: () => mockFetch(keywordsData),
   });
 
-  const handleSort = (key: keyof typeof keywordsData[0]) => {
+  const handleSort = (key: keyof Keyword) => {
     if (sortKey === key) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {

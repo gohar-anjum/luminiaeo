@@ -15,11 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
-import { mockFetch } from "@/utils/mockFetch";
-import visibilityData from "@/data/visibility.json";
 import { Search, CheckCircle2, XCircle } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useToast } from "@/hooks/use-toast";
+import { registerMockData } from "@/lib/queryClient";
+import visibilityData from "@/data/visibility.json";
+import { useEffect } from "react";
 
 export default function AIVisibility() {
   const { toast } = useToast();
@@ -28,9 +29,13 @@ export default function AIVisibility() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
+  // Register mock data for this endpoint
+  useEffect(() => {
+    registerMockData("/api/visibility", async () => visibilityData);
+  }, []);
+
   const { data, isLoading } = useQuery({
     queryKey: ["/api/visibility"],
-    queryFn: () => mockFetch(visibilityData),
     enabled: showResults,
   });
 
