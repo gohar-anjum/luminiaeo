@@ -6,6 +6,12 @@ export const REAL_API_ENDPOINTS = [
   "/api/logout",
   "/api/user",
   "/api/pbn",
+  "/api/faq",
+  "/api/keyword-research",
+  "/api/keyword-planner",
+  "/api/seo",
+  "/api/serp",
+  "/api/citations",
 ];
 
 export function shouldUseRealAPI(endpoint: string): boolean {

@@ -4,8 +4,34 @@ import { mockFetch } from "@/utils/mockFetch";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = res.statusText;
+    let errorData: any = null;
+
+    try {
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        errorData = await res.json();
+        // Handle standard API error format
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } else {
+        const text = await res.text();
+        if (text) {
+          errorMessage = text;
+        }
+      }
+    } catch {
+      // If parsing fails, use status text
+      errorMessage = res.statusText;
+    }
+
+    const error = new Error(errorMessage) as any;
+    error.status = res.status;
+    error.response = errorData;
+    throw error;
   }
 }
 
@@ -60,6 +86,17 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  // Handle rate limiting (429) with better error message
+  if (res.status === 429) {
+    const retryAfter = res.headers.get("Retry-After");
+    const message = retryAfter
+      ? `Rate limit exceeded. Please retry after ${retryAfter} seconds.`
+      : "Rate limit exceeded. Please try again later.";
+    const error = new Error(message) as any;
+    error.status = 429;
+    throw error;
+  }
+
   await throwIfResNotOk(res);
   return res;
 }
@@ -99,7 +136,21 @@ export function getQueryFn<T>(options: {
       }
 
       await throwIfResNotOk(res);
-      return await res.json();
+      
+      const data = await res.json();
+      
+      // Handle standard API response format
+      if (data.status !== undefined && data.response !== undefined) {
+        // Standard API response format
+        if (data.status >= 200 && data.status < 300) {
+          return data.response as T;
+        } else {
+          throw new Error(data.message || "API request failed");
+        }
+      }
+      
+      // Direct response (no wrapper)
+      return data as T;
     }
     
     const mockData = await getMockData<T>(endpoint);

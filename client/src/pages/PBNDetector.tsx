@@ -17,6 +17,8 @@ import { Search, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getApiUrl } from "@/lib/apiConfig";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/DataTablePagination";
 
 export default function PBNDetector() {
   const { toast } = useToast();
@@ -180,6 +182,16 @@ export default function PBNDetector() {
   const lowRiskCount = pbnSummary?.low_risk_count ?? (pbnData?.filter((d: any) => d.risk === "low").length || 0);
   const totalBacklinks = backlinksSummary?.backlinks ?? pbnData.length;
 
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedPbnData,
+    goToPage,
+    itemsPerPage,
+    setItemsPerPage,
+    totalItems: totalPbnItems,
+  } = usePagination(pbnData, { itemsPerPage: 20 });
+
   const getRiskColor = (risk: string) => {
     switch (risk) {
       case "high":
@@ -309,7 +321,7 @@ export default function PBNDetector() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pbnData.map((item: any) => (
+                    {paginatedPbnData.map((item: any) => (
                       <TableRow key={item.id} data-testid={`row-pbn-${item.id}`}>
                         <TableCell className="font-medium">
                           <a 
@@ -341,6 +353,14 @@ export default function PBNDetector() {
                     ))}
                   </TableBody>
                 </Table>
+                <DataTablePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={totalPbnItems}
+                  onPageChange={goToPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
               </div>
             </CardContent>
           </Card>

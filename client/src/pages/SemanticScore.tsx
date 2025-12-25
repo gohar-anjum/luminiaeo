@@ -16,6 +16,8 @@ import {
 import { Search, Download } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/DataTablePagination";
 
 export default function SemanticScore() {
   const { toast } = useToast();
@@ -71,6 +73,16 @@ export default function SemanticScore() {
   })) || [];
 
   const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedMissingTopics,
+    goToPage,
+    itemsPerPage,
+    setItemsPerPage,
+    totalItems: totalMissingTopics,
+  } = usePagination(results?.missingTopics || [], { itemsPerPage: 10 });
 
   return (
     <div className="p-8 space-y-6">
@@ -235,16 +247,27 @@ export default function SemanticScore() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {results.missingTopics.map((topic: any, index: number) => (
-                      <TableRow key={index} data-testid={`row-topic-${index}`}>
+                    {paginatedMissingTopics.map((topic: any, index: number) => {
+                      const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                      return (
+                      <TableRow key={`${topic.name}-${actualIndex}`} data-testid={`row-topic-${actualIndex}`}>
                         <TableCell className="font-medium">{topic.name}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {topic.suggestion}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    );
+                    })}
                   </TableBody>
                 </Table>
+                <DataTablePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={totalMissingTopics}
+                  onPageChange={goToPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
               </CardContent>
             </Card>
           </div>

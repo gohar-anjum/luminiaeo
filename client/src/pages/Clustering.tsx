@@ -17,6 +17,8 @@ import * as d3 from "d3";
 import { useToast } from "@/hooks/use-toast";
 import { registerMockData } from "@/lib/queryClient";
 import clustersData from "@/data/clusters.json";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/DataTablePagination";
 
 export default function Clustering() {
   const { toast } = useToast();
@@ -193,6 +195,16 @@ export default function Clustering() {
 
   const tableData = data ? flattenTree(data) : [];
 
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedTableData,
+    goToPage,
+    itemsPerPage,
+    setItemsPerPage,
+    totalItems: totalTableItems,
+  } = usePagination(tableData, { itemsPerPage: 20 });
+
   return (
     <div className="p-8 space-y-6">
       <div>
@@ -267,17 +279,28 @@ export default function Clustering() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tableData.map((item, index) => (
-                      <TableRow key={index} data-testid={`row-cluster-${index}`}>
+                    {paginatedTableData.map((item, index) => {
+                      const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                      return (
+                      <TableRow key={`${item.name}-${actualIndex}`} data-testid={`row-cluster-${actualIndex}`}>
                         <TableCell>
                           <span className="text-sm font-medium">{item.level}</span>
                         </TableCell>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>{item.count}</TableCell>
                       </TableRow>
-                    ))}
+                    );
+                    })}
                   </TableBody>
                 </Table>
+                <DataTablePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={totalTableItems}
+                  onPageChange={goToPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
               </div>
             </CardContent>
           </Card>

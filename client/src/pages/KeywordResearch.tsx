@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,14 +19,18 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { formatNumber, formatCurrency } from "@/utils/formatters";
-import { Search, Download, Plus, FileText, ArrowUpDown } from "lucide-react";
+import { Search, Download, Plus, FileText, ArrowUpDown, Loader2, Database } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { registerMockData } from "@/lib/queryClient";
 import keywordsData from "@/data/keywords.json";
-import { useEffect } from "react";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/DataTablePagination";
+import { apiClient } from "@/lib/api/client";
+import type { KeywordResearchRequest, KeywordResearchStatus, KeywordResearchResults } from "@/lib/api/types";
 
 type Keyword = {
   id: string;
@@ -35,25 +39,49 @@ type Keyword = {
   cpc: number;
   competition: string;
   intent: string;
+  source?: string; // Add source field to show provider
 };
 
 export default function KeywordResearch() {
   const { toast } = useToast();
+  const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [locale, setLocale] = useState("us");
   const [language, setLanguage] = useState("en");
   const [intentFilter, setIntentFilter] = useState("all");
   const [sortKey, setSortKey] = useState<keyof Keyword | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  
+  // Job Status State
+  const [isCreating, setIsCreating] = useState(false);
+  const [activeJobId, setActiveJobId] = useState<number | null>(null);
+  const [jobStatus, setJobStatus] = useState<KeywordResearchStatus | null>(null);
+  const [jobResults, setJobResults] = useState<KeywordResearchResults | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Register mock data for this endpoint
+  // Register mock data for this endpoint (fallback)
   useEffect(() => {
     registerMockData("/api/keywords", async () => keywordsData);
   }, []);
 
-  const { data, isLoading } = useQuery<Keyword[]>({
+  // Use job results if available, otherwise use mock data
+  const keywordsFromResults = jobResults?.keywords?.map((kw) => ({
+    id: String(kw.keyword),
+    keyword: kw.keyword,
+    volume: kw.search_volume,
+    cpc: kw.cpc,
+    competition: typeof kw.competition === 'string' ? kw.competition : (kw.competition > 0.7 ? 'High' : kw.competition > 0.4 ? 'Medium' : 'Low'),
+    intent: kw.intent || 'unknown',
+    source: kw.source,
+  })) || [];
+
+  const { data: mockData, isLoading: isLoadingMock } = useQuery<Keyword[]>({
     queryKey: ["/api/keywords"],
+    enabled: !jobResults, // Only fetch mock data if no job results
   });
+
+  const data = jobResults ? keywordsFromResults : mockData;
+  const isLoading = jobResults ? false : isLoadingMock;
 
   const handleSort = (key: keyof Keyword) => {
     if (sortKey === key) {
@@ -91,6 +119,16 @@ export default function KeywordResearch() {
     });
   }
 
+  const {
+    currentPage,
+    totalPages,
+    paginatedData,
+    goToPage,
+    itemsPerPage,
+    setItemsPerPage,
+    totalItems,
+  } = usePagination(filteredData, { itemsPerPage: 20 });
+
   const topKeywords = [...(data || [])]
     .sort((a: any, b: any) => b.volume - a.volume)
     .slice(0, 10);
@@ -100,11 +138,128 @@ export default function KeywordResearch() {
     volume: kw.volume,
   }));
 
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Poll job status
+  const pollJobStatus = useCallback(async (jobId: number) => {
+    try {
+      const status = await apiClient.getKeywordResearchStatus(jobId);
+      setJobStatus(status);
+
+      if (status.status === "completed") {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        
+        // Fetch results
+        const results = await apiClient.getKeywordResearchResults(jobId);
+        setJobResults(results);
+        setIsCreating(false);
+        
+        toast({
+          title: "Research Complete",
+          description: `Found ${results.keywords?.length || 0} keywords`,
+        });
+      } else if (status.status === "failed") {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        setIsCreating(false);
+        toast({
+          title: "Research Failed",
+          description: "Keyword research job failed",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error polling job status:", error);
+    }
+  }, [toast]);
+
+  // Start polling when job is created
+  useEffect(() => {
+    if (activeJobId && !pollingIntervalRef.current) {
+      // Poll immediately, then every 5 seconds
+      pollJobStatus(activeJobId);
+      pollingIntervalRef.current = setInterval(() => {
+        pollJobStatus(activeJobId);
+      }, 5000);
+    }
+  }, [activeJobId, pollJobStatus]);
+
+  const handleSearch = async () => {
+    if (!query.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a search query",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    setJobResults(null);
+    setJobStatus(null);
+
+    try {
+      const request: KeywordResearchRequest = {
+        query: query.trim(),
+        max_keywords: 100,
+      };
+
+      const job = await apiClient.createKeywordResearch(request);
+      setActiveJobId(job.id);
+      setJobStatus({
+        id: job.id,
+        status: job.status,
+        progress: 0,
+        created_at: new Date().toISOString(),
+      });
+
+      toast({
+        title: "Research Started",
+        description: "Keyword research job created. Polling for results...",
+      });
+    } catch (error: any) {
+      setIsCreating(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create keyword research job",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleExport = () => {
     toast({
       title: "Export started",
       description: "Your keyword data is being exported to CSV...",
     });
+  };
+
+  // Get provider badge info from source
+  const getProviderBadge = (source?: string) => {
+    if (!source) return null;
+    
+    if (source.includes('dataforseo')) {
+      return <Badge variant="secondary" className="text-xs">DataForSEO</Badge>;
+    } else if (source.includes('google')) {
+      return <Badge variant="outline" className="text-xs">Google</Badge>;
+    } else if (source.includes('scraper')) {
+      return <Badge variant="outline" className="text-xs">Scraper</Badge>;
+    } else if (source.includes('answerthepublic')) {
+      return <Badge variant="outline" className="text-xs">AnswerThePublic</Badge>;
+    }
+    return <Badge variant="outline" className="text-xs">{source}</Badge>;
   };
 
   if (isLoading) {
@@ -130,18 +285,58 @@ export default function KeywordResearch() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search keywords..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              data-testid="input-search-keyword"
-            />
+      {/* Query Input */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Enter keyword or topic to research..."
+                className="pl-10"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isCreating) {
+                    handleSearch();
+                  }
+                }}
+                disabled={isCreating}
+                data-testid="input-query"
+              />
+            </div>
+            <Button 
+              onClick={handleSearch} 
+              disabled={isCreating || !query.trim()}
+              data-testid="button-search"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4 mr-2" />
+                  Search
+                </>
+              )}
+            </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Filters */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search keywords..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            data-testid="input-search-keyword"
+          />
         </div>
 
         <Select value={locale} onValueChange={setLocale}>
@@ -182,6 +377,62 @@ export default function KeywordResearch() {
           Generate FAQs
         </Button>
       </div>
+
+      {/* Job Status Card */}
+      {(isCreating || jobStatus) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Research Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {jobStatus && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {jobStatus.status === "processing" && (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    )}
+                    {jobStatus.status === "completed" && (
+                      <Database className="w-4 h-4 text-green-600" />
+                    )}
+                    <span className="font-medium">
+                      Status: {jobStatus.status.charAt(0).toUpperCase() + jobStatus.status.slice(1)}
+                    </span>
+                  </div>
+                  {jobStatus.progress !== undefined && (
+                    <span className="text-sm text-muted-foreground">
+                      {jobStatus.progress}%
+                    </span>
+                  )}
+                </div>
+                {jobStatus.progress !== undefined && (
+                  <Progress value={jobStatus.progress} className="h-2" />
+                )}
+                {jobResults && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="secondary">
+                      {jobResults.keywords?.length || 0} Keywords
+                    </Badge>
+                    {jobResults.clusters && jobResults.clusters.length > 0 && (
+                      <Badge variant="outline">
+                        {jobResults.clusters.length} Clusters
+                      </Badge>
+                    )}
+                    {/* Show provider info if available */}
+                    {jobResults.keywords && jobResults.keywords.some(k => k.source?.includes('dataforseo')) && (
+                      <Badge variant="secondary">DataForSEO</Badge>
+                    )}
+                    {jobResults.keywords && jobResults.keywords.some(k => k.source?.includes('google')) && (
+                      <Badge variant="outline">Google</Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card data-testid="card-volume-chart">
         <CardHeader>
@@ -258,17 +509,25 @@ export default function KeywordResearch() {
                       <ArrowUpDown className="w-3 h-3" />
                     </div>
                   </TableHead>
+                  <TableHead>Source</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.length === 0 ? (
+                {paginatedData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      No keywords found
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      {jobStatus?.status === "processing" ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="w-6 h-6 animate-spin" />
+                          <span>Research in progress...</span>
+                        </div>
+                      ) : (
+                        "No keywords found"
+                      )}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredData.map((keyword: any) => (
+                  paginatedData.map((keyword: any) => (
                     <TableRow key={keyword.id} data-testid={`row-keyword-${keyword.id}`}>
                       <TableCell className="font-medium">{keyword.keyword}</TableCell>
                       <TableCell>{formatNumber(keyword.volume)}</TableCell>
@@ -289,11 +548,22 @@ export default function KeywordResearch() {
                       <TableCell>
                         <Badge variant="outline">{keyword.intent}</Badge>
                       </TableCell>
+                      <TableCell>
+                        {getProviderBadge(keyword.source)}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              itemsPerPage={itemsPerPage}
+              totalItems={totalItems}
+              onPageChange={goToPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
           </div>
         </CardContent>
       </Card>
