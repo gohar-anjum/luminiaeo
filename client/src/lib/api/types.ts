@@ -49,7 +49,7 @@ export interface KeywordResearchRequest {
   query: string;
   project_id?: number | null;
   language_code?: string;
-  geo_target_id?: number;
+  geo_target_id?: number; // Location code from location codes API
   max_keywords?: number;
   enable_google_planner?: boolean;
   enable_scraper?: boolean;
@@ -337,6 +337,7 @@ export interface FAQ {
 // Task-based FAQ API Types
 export interface FAQTaskRequest {
   input: string;
+  location_code?: number;
   options?: {
     temperature?: number;
   };
@@ -436,6 +437,45 @@ export interface CitationResult {
 export interface CitationRetryResponse {
   task_id: number;
   missing_count: number;
+}
+
+// Location Codes Types
+export interface LocationCode {
+  id: number;
+  location_code: number;
+  location_name: string;
+  country_iso_code: string | null;
+  location_type: string | null;
+  location_code_parent: number | null;
+}
+
+export interface LocationCodesCountriesResponse {
+  status: number;
+  message: string;
+  response: {
+    countries: LocationCode[];
+    total: number;
+  };
+}
+
+export interface LocationCodesResponse {
+  status: number;
+  message: string;
+  response: {
+    location_codes: LocationCode[];
+    pagination: {
+      current_page: number;
+      per_page: number;
+      total: number;
+      last_page: number;
+    };
+  };
+}
+
+export interface LocationCodeResponse {
+  status: number;
+  message: string;
+  response: LocationCode;
 }
 
 

@@ -31,6 +31,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
 import { apiClient } from "@/lib/api/client";
 import type { KeywordResearchRequest, KeywordResearchStatus, KeywordResearchResults } from "@/lib/api/types";
+import { LocationSelector } from "@/components/LocationSelector";
 
 type Keyword = {
   id: string;
@@ -46,9 +47,8 @@ export default function KeywordResearch() {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [locale, setLocale] = useState("us");
+  const [locationCode, setLocationCode] = useState<number>(2840); // Default to US
   const [language, setLanguage] = useState("en");
-  const [intentFilter, setIntentFilter] = useState("all");
   const [sortKey, setSortKey] = useState<keyof Keyword | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   
@@ -97,12 +97,6 @@ export default function KeywordResearch() {
   if (searchTerm) {
     filteredData = filteredData.filter((kw: any) =>
       kw.keyword.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }
-
-  if (intentFilter !== "all") {
-    filteredData = filteredData.filter((kw: any) =>
-      kw.intent.toLowerCase() === intentFilter.toLowerCase()
     );
   }
 
@@ -214,6 +208,7 @@ export default function KeywordResearch() {
       const request: KeywordResearchRequest = {
         query: query.trim(),
         max_keywords: 100,
+        geo_target_id: locationCode,
       };
 
       const job = await apiClient.createKeywordResearch(request);
@@ -339,28 +334,14 @@ export default function KeywordResearch() {
           />
         </div>
 
-        <Select value={locale} onValueChange={setLocale}>
-          <SelectTrigger data-testid="select-locale">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="us">United States</SelectItem>
-            <SelectItem value="uk">United Kingdom</SelectItem>
-            <SelectItem value="ca">Canada</SelectItem>
-          </SelectContent>
-        </Select>
+        <LocationSelector
+          value={locationCode}
+          onChange={setLocationCode}
+          label=""
+          showSearch={true}
+          disabled={isCreating}
+        />
 
-        <Select value={intentFilter} onValueChange={setIntentFilter}>
-          <SelectTrigger data-testid="select-intent">
-            <SelectValue placeholder="Filter by intent" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Intents</SelectItem>
-            <SelectItem value="informational">Informational</SelectItem>
-            <SelectItem value="commercial">Commercial</SelectItem>
-            <SelectItem value="transactional">Transactional</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="flex gap-2">
@@ -368,18 +349,18 @@ export default function KeywordResearch() {
           <Download className="w-4 h-4 mr-2" />
           Export CSV
         </Button>
-        <Button variant="outline" data-testid="button-add-cluster">
+        {/* <Button variant="outline" data-testid="button-add-cluster">
           <Plus className="w-4 h-4 mr-2" />
           Add to Cluster
-        </Button>
+        </Button> */}
         <Button variant="outline" data-testid="button-generate-faq">
           <FileText className="w-4 h-4 mr-2" />
           Generate FAQs
         </Button>
       </div>
 
-      {/* Job Status Card */}
-      {(isCreating || jobStatus) && (
+      {/* Job Status Card - Only show when creating or processing */}
+      {(isCreating || (jobStatus && jobStatus.status === "processing")) && (
         <Card>
           <CardHeader>
             <CardTitle>Research Status</CardTitle>
@@ -391,9 +372,6 @@ export default function KeywordResearch() {
                   <div className="flex items-center gap-2">
                     {jobStatus.status === "processing" && (
                       <Loader2 className="w-4 h-4 animate-spin" />
-                    )}
-                    {jobStatus.status === "completed" && (
-                      <Database className="w-4 h-4 text-green-600" />
                     )}
                     <span className="font-medium">
                       Status: {jobStatus.status.charAt(0).toUpperCase() + jobStatus.status.slice(1)}
@@ -408,57 +386,39 @@ export default function KeywordResearch() {
                 {jobStatus.progress !== undefined && (
                   <Progress value={jobStatus.progress} className="h-2" />
                 )}
-                {jobResults && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="secondary">
-                      {jobResults.keywords?.length || 0} Keywords
-                    </Badge>
-                    {jobResults.clusters && jobResults.clusters.length > 0 && (
-                      <Badge variant="outline">
-                        {jobResults.clusters.length} Clusters
-                      </Badge>
-                    )}
-                    {/* Show provider info if available */}
-                    {jobResults.keywords && jobResults.keywords.some(k => k.source?.includes('dataforseo')) && (
-                      <Badge variant="secondary">DataForSEO</Badge>
-                    )}
-                    {jobResults.keywords && jobResults.keywords.some(k => k.source?.includes('google')) && (
-                      <Badge variant="outline">Google</Badge>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
+      {data && data.length > 0 && (
+        <>
+          <Card data-testid="card-volume-chart">
+            <CardHeader>
+              <CardTitle>Top 10 Keywords by Volume</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <XAxis
+                      dataKey="name"
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip />
+                    <Bar dataKey="volume" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-      <Card data-testid="card-volume-chart">
-        <CardHeader>
-          <CardTitle>Top 10 Keywords by Volume</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis
-                  dataKey="name"
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="volume" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card data-testid="card-keywords-table">
+          <Card data-testid="card-keywords-table">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -500,22 +460,12 @@ export default function KeywordResearch() {
                       <ArrowUpDown className="w-3 h-3" />
                     </div>
                   </TableHead>
-                  <TableHead
-                    className="cursor-pointer hover-elevate"
-                    onClick={() => handleSort("intent")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Intent
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </TableHead>
-                  <TableHead>Source</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                       {jobStatus?.status === "processing" ? (
                         <div className="flex flex-col items-center gap-2">
                           <Loader2 className="w-6 h-6 animate-spin" />
@@ -545,12 +495,6 @@ export default function KeywordResearch() {
                           {keyword.competition}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{keyword.intent}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getProviderBadge(keyword.source)}
-                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -567,6 +511,8 @@ export default function KeywordResearch() {
           </div>
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

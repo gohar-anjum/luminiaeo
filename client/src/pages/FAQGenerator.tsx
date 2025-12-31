@@ -26,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
 import type { FAQTaskResponse } from "@/lib/api/types";
+import { LocationSelector } from "@/components/LocationSelector";
 
 interface FAQ {
   question: string;
@@ -35,6 +36,7 @@ interface FAQ {
 export default function FAQGenerator() {
   const { toast } = useToast();
   const [input, setInput] = useState("");
+  const [locationCode, setLocationCode] = useState<number>(2840); // Default to US
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -190,6 +192,7 @@ export default function FAQGenerator() {
       const normalizedInput = normalizeInput(input);
       const response = await apiClient.createFaqTask({
         input: normalizedInput,
+        location_code: locationCode,
         options: { temperature: 0.9 },
       });
 
@@ -328,6 +331,13 @@ export default function FAQGenerator() {
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
+            <LocationSelector
+              value={locationCode}
+              onChange={setLocationCode}
+              label="Target Location"
+              showSearch={true}
+              disabled={loading}
+            />
             <div className="space-y-2">
               <Label htmlFor="faq-input">URL or Topic</Label>
               <div className="flex gap-2">

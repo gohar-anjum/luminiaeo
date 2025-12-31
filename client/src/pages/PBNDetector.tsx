@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -13,10 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Download } from "lucide-react";
+import { Search, Download, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { getApiUrl } from "@/lib/apiConfig";
+import { apiClient } from "@/lib/api/client";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
 
@@ -25,11 +25,135 @@ export default function PBNDetector() {
   const [domain, setDomain] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [taskId, setTaskId] = useState<string | null>(null);
+  const [taskStatus, setTaskStatus] = useState<string | null>(null);
 
   const [pbnData, setPbnData] = useState<any[]>([]);
   const [pbnSummary, setPbnSummary] = useState<any>(null);
   const [backlinksSummary, setBacklinksSummary] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
+  
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const maxPollingTime = 10 * 60 * 1000; // 10 minutes
+  const pollingStartTimeRef = useRef<number | null>(null);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, []);
+
+  const fetchAndSetResults = useCallback(async (taskId: string) => {
+    try {
+      const results = await apiClient.getBacklinkResults({ task_id: taskId });
+      const responseData = results.results || results;
+      
+      // Only process if PBN detection is completed
+      const pbnDetection = responseData.pbn_detection as any;
+      if (pbnDetection && pbnDetection.status === "completed" && pbnDetection.items) {
+        const pbnMappedItems = (pbnDetection.items || []).map((item: any, index: number) => ({
+          id: `pbn-${index}`,
+          referringDomain: item.source_url || item.domain_from || "",
+          ip: item.signals?.ip || item.domain_from_ip || "",
+          da: item.signals?.domain_rank || item.domain_rank || 0,
+          spam: item.signals?.backlink_spam_score || item.backlink_spam_score || 0,
+          risk: item.risk_level || "low",
+          pbnProbability: item.pbn_probability || 0,
+          domainRank: item.signals?.domain_rank || item.domain_rank || 0,
+        }));
+        
+        const riskPriority: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
+        const sortedItems = pbnMappedItems.sort((a: any, b: any) => {
+          const riskDiff = riskPriority[b.risk] - riskPriority[a.risk];
+          if (riskDiff !== 0) return riskDiff;
+          return b.pbnProbability - a.pbnProbability;
+        });
+        
+        setPbnData(sortedItems);
+        setPbnSummary(pbnDetection.summary || null);
+        setBacklinksSummary(responseData.summary || null);
+        setShowResults(true);
+        setIsAnalyzing(false);
+        toast({
+          title: "Analysis Complete",
+          description: "PBN detection completed successfully.",
+        });
+      }
+    } catch (error: any) {
+      setIsAnalyzing(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch results",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const startPolling = useCallback((taskId: string) => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+    
+    pollingStartTimeRef.current = Date.now();
+    
+    const poll = async () => {
+      if (pollingStartTimeRef.current && Date.now() - pollingStartTimeRef.current > maxPollingTime) {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        setIsAnalyzing(false);
+        toast({
+          title: "Timeout",
+          description: "Analysis took too long. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        const status = await apiClient.getBacklinkStatus({ task_id: taskId });
+        setTaskStatus(status.status);
+
+        if (status.status === "completed") {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          await fetchAndSetResults(taskId);
+        } else if (status.status === "failed") {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setIsAnalyzing(false);
+          toast({
+            title: "Analysis Failed",
+            description: status.error_message || "Task failed",
+            variant: "destructive",
+          });
+        }
+      } catch (error: any) {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        setIsAnalyzing(false);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to check status",
+          variant: "destructive",
+        });
+      }
+    };
+
+    poll();
+    pollingIntervalRef.current = setInterval(poll, 5000);
+  }, [toast, maxPollingTime, fetchAndSetResults]);
 
   const handleAnalyze = async () => {
     if (!domain) {
@@ -42,49 +166,37 @@ export default function PBNDetector() {
     }
 
     setIsAnalyzing(true);
+    setShowResults(false);
+    setPbnData([]);
+    setPbnSummary(null);
+    setBacklinksSummary(null);
+    setTaskId(null);
+    setTaskStatus(null);
+
     try {
-      const res = await apiRequest("POST", getApiUrl("/api/seo/backlinks/submit"), { domain });
-      const response = await res.json();
+      const response = await apiClient.submitBacklinkAnalysis({ domain });
+      const taskId = response.task_id;
+      setTaskId(taskId);
+      setTaskStatus(response.status);
       
-      if (response.response && response.response.pbn_detection) {
-        const pbnDetection = response.response.pbn_detection;
-        
-        const mappedItems = (pbnDetection.items || []).map((item: any, index: number) => ({
-          id: `pbn-${index}`,
-          referringDomain: item.source_url || "",
-          ip: item.signals?.ip || "",
-          da: item.signals?.domain_rank || 0,
-          spam: item.signals?.backlink_spam_score || 0,
-          risk: item.risk_level || "low",
-          pbnProbability: item.pbn_probability || 0,
-          domainRank: item.signals?.domain_rank || 0,
-        }));
-        
-        const riskPriority: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
-        const sortedItems = mappedItems.sort((a: any, b: any) => {
-          const riskDiff = riskPriority[b.risk] - riskPriority[a.risk];
-          if (riskDiff !== 0) return riskDiff;
-          return b.pbnProbability - a.pbnProbability;
-        });
-        
-        setPbnData(sortedItems);
-        setPbnSummary(pbnDetection.summary || null);
-        setBacklinksSummary(response.response.summary || null);
-        setShowResults(true);
+      // If already completed, fetch results directly
+      if (response.status === "completed") {
+        await fetchAndSetResults(taskId);
       } else {
-        setPbnData(Array.isArray(response) ? response : []);
-        setPbnSummary(null);
-        setBacklinksSummary(null);
-        setShowResults(true);
+        // Start polling for status updates
+        startPolling(taskId);
+        toast({
+          title: "Analysis Started",
+          description: "Backlink analysis has been queued. This may take a few minutes.",
+        });
       }
     } catch (error: any) {
+      setIsAnalyzing(false);
       toast({
         title: "Error",
         description: error.message || "Failed to analyze domain",
         variant: "destructive",
       });
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -105,15 +217,14 @@ export default function PBNDetector() {
         description: "Generating disavow.txt file...",
       });
 
-      const res = await apiRequest("POST", getApiUrl("/api/seo/backlinks/harmful"), {
+      const response = await apiClient.getHarmfulBacklinks({
         domain,
         risk_levels: ["high", "critical"],
       });
 
-      const response = await res.json();
-
-      if (response.response && response.response.backlinks) {
-        const backlinks = response.response.backlinks;
+      const responseData = (response as any).response || response;
+      if (responseData && responseData.backlinks) {
+        const backlinks = responseData.backlinks;
         
         if (backlinks.length === 0) {
           toast({
@@ -250,12 +361,32 @@ export default function PBNDetector() {
         </CardContent>
       </Card>
 
-      {isAnalyzing && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-        </div>
+      {(isAnalyzing || (taskStatus && taskStatus !== "completed")) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Analysis Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                {taskStatus === "processing" && (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                )}
+                <span className="font-medium">
+                  Status: {taskStatus ? taskStatus.charAt(0).toUpperCase() + taskStatus.slice(1) : "Initializing..."}
+                </span>
+              </div>
+              {taskStatus === "processing" && (
+                <Progress value={undefined} className="h-2" />
+              )}
+              <p className="text-sm text-muted-foreground">
+                {taskStatus === "processing" 
+                  ? "PBN detection is in progress. This may take a few minutes..."
+                  : "Please wait while we analyze your backlinks..."}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {showResults && pbnData && pbnData.length > 0 && (

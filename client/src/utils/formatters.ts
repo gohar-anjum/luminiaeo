@@ -1,10 +1,16 @@
 // Format number with commas
-export function formatNumber(num: number): string {
+export function formatNumber(num: number | null | undefined): string {
+  if (num === null || num === undefined) {
+    return "N/A";
+  }
   return num.toLocaleString();
 }
 
 // Format currency
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) {
+    return "N/A";
+  }
   return `$${amount.toFixed(2)}`;
 }
 

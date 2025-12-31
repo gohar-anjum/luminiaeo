@@ -38,6 +38,10 @@ import type {
   CitationAnalyzeResponse,
   CitationStatusResponse,
   CitationResult,
+  LocationCode,
+  LocationCodesCountriesResponse,
+  LocationCodesResponse,
+  LocationCodeResponse,
 } from "./types";
 
 export class ApiError extends Error {
@@ -501,7 +505,7 @@ export class ApiClient {
 
     const data = await response.json();
 
-    if (data.status === 202 && data.response) {
+    if ((data.status === 200 || data.status === 202) && data.response) {
       return data.response;
     }
 
@@ -536,6 +540,52 @@ export class ApiClient {
       data.message || "Failed to retry citation analysis",
       data.status || response.status
     );
+  }
+
+  // Location Codes Methods
+  async getLocationCodesCountries(): Promise<LocationCodesCountriesResponse> {
+    return this.get<LocationCodesCountriesResponse>("/api/location-codes/countries");
+  }
+
+  async getLocationCodes(params?: {
+    countries_only?: boolean;
+    search?: string;
+    sort_by?: string;
+    sort_order?: "asc" | "desc";
+    per_page?: number;
+    type?: string;
+    country_iso_code?: string;
+  }): Promise<LocationCodesResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.countries_only !== undefined) {
+      queryParams.append("countries_only", String(params.countries_only));
+    }
+    if (params?.search) {
+      queryParams.append("search", params.search);
+    }
+    if (params?.sort_by) {
+      queryParams.append("sort_by", params.sort_by);
+    }
+    if (params?.sort_order) {
+      queryParams.append("sort_order", params.sort_order);
+    }
+    if (params?.per_page) {
+      queryParams.append("per_page", String(params.per_page));
+    }
+    if (params?.type) {
+      queryParams.append("type", params.type);
+    }
+    if (params?.country_iso_code) {
+      queryParams.append("country_iso_code", params.country_iso_code);
+    }
+
+    const queryString = queryParams.toString();
+    const url = `/api/location-codes${queryString ? `?${queryString}` : ""}`;
+    return this.get<LocationCodesResponse>(url);
+  }
+
+  async getLocationCode(locationCode: number): Promise<LocationCodeResponse> {
+    return this.get<LocationCodeResponse>(`/api/location-codes/${locationCode}`);
   }
 }
 

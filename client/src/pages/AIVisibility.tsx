@@ -129,6 +129,55 @@ export default function AIVisibility() {
     };
   }, []);
 
+  const fetchAndSetResults = useCallback(async (taskId: number) => {
+    try {
+      const resultsData = await apiClient.getCitationResults(taskId);
+      const mappedResults: CitationResult = {
+        ...resultsData,
+        results: {
+          ...resultsData.results,
+          by_query: resultsData.results.by_query.map((entry: any) => ({
+            ...entry,
+            gpt: {
+              ...entry.gpt,
+              // Preserve provider field if present
+              provider: entry.gpt?.provider,
+              // Keep citation_references in original format (can be strings or objects)
+              citation_references: entry.gpt.citation_references || [],
+            },
+          })),
+          scores: {
+            gpt_score: resultsData.results.scores.gpt_score,
+            gemini_score: resultsData.results.scores.gemini_score,
+            dataforseo_score: resultsData.results.scores.dataforseo_score,
+          },
+        },
+        meta: {
+          gpt_score: resultsData.results.scores.gpt_score,
+          gemini_score: resultsData.results.scores.gemini_score,
+          dataforseo_score: resultsData.results.scores.dataforseo_score ?? resultsData.meta?.dataforseo_score,
+          completed_at: new Date().toISOString(),
+          requested_queries: resultsData.queries.length,
+          num_queries: resultsData.queries.length,
+        },
+      };
+      setResults(mappedResults);
+      setIsAnalyzing(false);
+      toast({
+        title: "Analysis Complete",
+        description: "Citation analysis completed successfully.",
+      });
+    } catch (error: any) {
+      setIsAnalyzing(false);
+      const { message } = handleApiError(error);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
   const startPolling = useCallback((taskId: number) => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
@@ -171,53 +220,7 @@ export default function AIVisibility() {
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
           }
-          
-          try {
-            const resultsData = await apiClient.getCitationResults(taskId);
-            const mappedResults: CitationResult = {
-              ...resultsData,
-              results: {
-                ...resultsData.results,
-                by_query: resultsData.results.by_query.map((entry: any) => ({
-                  ...entry,
-                  gpt: {
-                    ...entry.gpt,
-                    // Preserve provider field if present
-                    provider: entry.gpt?.provider,
-                    // Keep citation_references in original format (can be strings or objects)
-                    citation_references: entry.gpt.citation_references || [],
-                  },
-                })),
-                scores: {
-                  gpt_score: resultsData.results.scores.gpt_score,
-                  gemini_score: resultsData.results.scores.gemini_score,
-                  dataforseo_score: resultsData.results.scores.dataforseo_score,
-                },
-              },
-              meta: {
-                gpt_score: resultsData.results.scores.gpt_score,
-                gemini_score: resultsData.results.scores.gemini_score,
-                dataforseo_score: resultsData.results.scores.dataforseo_score ?? resultsData.meta?.dataforseo_score,
-                completed_at: new Date().toISOString(),
-                requested_queries: resultsData.queries.length,
-                num_queries: resultsData.queries.length,
-              },
-            };
-            setResults(mappedResults);
-            setIsAnalyzing(false);
-            toast({
-              title: "Analysis Complete",
-              description: "Citation analysis completed successfully.",
-            });
-          } catch (error: any) {
-            setIsAnalyzing(false);
-            const { message } = handleApiError(error);
-            toast({
-              title: "Error",
-              description: message,
-              variant: "destructive",
-            });
-          }
+          await fetchAndSetResults(taskId);
         } else if (status.status === "failed") {
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
@@ -259,7 +262,7 @@ export default function AIVisibility() {
 
     poll();
     pollingIntervalRef.current = setInterval(poll, 5000);
-  }, [toast, maxPollingTime]);
+  }, [toast, maxPollingTime, fetchAndSetResults]);
 
   const handleAnalyze = async () => {
     if (!url) {
@@ -289,13 +292,20 @@ export default function AIVisibility() {
 
     try {
       const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
-      const task = await apiClient.analyzeCitations({ url: normalizedUrl, num_queries: 1000 });
+      const task = await apiClient.analyzeCitations({ url: normalizedUrl, num_queries: 200 });
       setTaskId(task.task_id);
-      startPolling(task.task_id);
-      toast({
-        title: "Analysis Started",
-        description: "Citation analysis has been queued. This may take a few minutes.",
-      });
+      
+      // If results_url is present and status is completed, fetch results directly
+      if (task.results_url && task.status === "completed") {
+        await fetchAndSetResults(task.task_id);
+      } else {
+        // Otherwise, start polling for status updates
+        startPolling(task.task_id);
+        toast({
+          title: "Analysis Started",
+          description: "Citation analysis has been queued. This may take a few minutes.",
+        });
+      }
     } catch (error: any) {
       setIsAnalyzing(false);
       const { message } = handleApiError(error);
