@@ -629,7 +629,6 @@ export default function AIVisibility() {
                       <TableHead>Query</TableHead>
                       <TableHead>{isDataForSEO ? 'DataForSEO' : 'GPT'}</TableHead>
                       <TableHead>Gemini</TableHead>
-                      <TableHead>References</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -668,76 +667,6 @@ export default function AIVisibility() {
                                   ? `${queryResult.gemini.confidence}%` 
                                   : "Not cited"}
                               </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              {queryResult.gpt.citation_references.length > 0 && (
-                                <div className="text-xs">
-                                  <span className="font-medium">
-                                    {queryResult.gpt.provider === 'dataforseo' ? 'DataForSEO' : 'GPT'}: 
-                                  </span>
-                                  {queryResult.gpt.citation_references.slice(0, 2).map((ref, i) => {
-                                    // Handle both string and object formats
-                                    const url: string = typeof ref === 'string' 
-                                      ? ref 
-                                      : (typeof ref === 'object' && ref !== null && 'url' in ref 
-                                          ? String(ref.url) 
-                                          : String(ref));
-                                    const displayText: string = typeof ref === 'string' 
-                                      ? ref 
-                                      : (typeof ref === 'object' && ref !== null && 'url' in ref 
-                                          ? String(ref.url) 
-                                          : String(ref));
-                                    return (
-                                      <a
-                                        key={i}
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-primary hover:underline block truncate max-w-xs"
-                                        title={displayText}
-                                      >
-                                        {displayText}
-                                      </a>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                              {queryResult.gemini.citation_references.length > 0 && (
-                                <div className="text-xs">
-                                  <span className="font-medium">Gemini: </span>
-                                  {queryResult.gemini.citation_references.slice(0, 2).map((ref, i) => {
-                                    // Handle both string and object formats
-                                    const url: string = typeof ref === 'string' 
-                                      ? ref 
-                                      : (typeof ref === 'object' && ref !== null && 'url' in ref 
-                                          ? String(ref.url) 
-                                          : String(ref));
-                                    const displayText: string = typeof ref === 'string' 
-                                      ? ref 
-                                      : (typeof ref === 'object' && ref !== null && 'url' in ref 
-                                          ? String(ref.url) 
-                                          : String(ref));
-                                    return (
-                                      <a
-                                        key={i}
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-primary hover:underline block truncate max-w-xs"
-                                        title={displayText}
-                                      >
-                                        {displayText}
-                                      </a>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                              {queryResult.gpt.citation_references.length === 0 && 
-                               queryResult.gemini.citation_references.length === 0 && (
-                                <span className="text-xs text-muted-foreground">No references</span>
-                              )}
                             </div>
                           </TableCell>
                         </TableRow>
