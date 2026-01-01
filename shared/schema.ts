@@ -114,6 +114,21 @@ export interface Activity {
   timestamp: string;
 }
 
+// Contact schema
+export const insertContactSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  message: z.string().min(1, "Message is required"),
+});
+
+export const contactSchema = insertContactSchema.extend({
+  id: z.number(),
+  createdAt: z.date(),
+});
+
+export type InsertContact = z.infer<typeof insertContactSchema>;
+export type Contact = z.infer<typeof contactSchema>;
+
 // Dashboard metrics type
 export interface DashboardMetrics {
   queriesAnalyzed: { value: number; trend: number[]; };
