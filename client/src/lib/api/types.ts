@@ -25,6 +25,17 @@ export interface RegisterRequest {
   password_confirmation: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  token: string;
+  password: string;
+  password_confirmation: string;
+}
+
 export interface LoginResponse {
   auth_token: string;
   user: {

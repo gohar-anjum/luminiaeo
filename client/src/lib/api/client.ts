@@ -4,6 +4,8 @@ import type {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
   User,
   KeywordResearchRequest,
   KeywordResearchJob,
@@ -175,6 +177,54 @@ export class ApiClient {
 
   async updateProfile(request: ProfileUpdateRequest): Promise<ProfileUpdateResponse> {
     return this.put<ProfileUpdateResponse>("/api/user/profile", request);
+  }
+
+  async forgotPassword(request: ForgotPasswordRequest): Promise<void> {
+    const response = await fetch(getApiUrl("/api/forgot-password"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(request),
+      credentials: "include",
+    });
+
+    const data = await response.json();
+
+    if (data.status === 200) {
+      return;
+    }
+
+    throw new ApiError(
+      data.message || "Failed to send password reset email",
+      data.status || response.status,
+      data
+    );
+  }
+
+  async resetPassword(request: ResetPasswordRequest): Promise<void> {
+    const response = await fetch(getApiUrl("/api/reset-password"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(request),
+      credentials: "include",
+    });
+
+    const data = await response.json();
+
+    if (data.status === 200) {
+      return;
+    }
+
+    throw new ApiError(
+      data.message || "Failed to reset password",
+      data.status || response.status,
+      data
+    );
   }
 
   async register(userData: RegisterRequest): Promise<void> {

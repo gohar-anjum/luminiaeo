@@ -16,6 +16,8 @@ import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 
 import Dashboard from "@/pages/Dashboard";
 import KeywordResearch from "@/pages/KeywordResearch";
@@ -62,6 +64,8 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
 
       {/* Protected Routes */}
       <Route path="/dashboard">
