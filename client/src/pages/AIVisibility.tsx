@@ -424,7 +424,7 @@ export default function AIVisibility() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="url">Domain URL</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   id="url"
                   placeholder="https://example.com"
@@ -438,6 +438,7 @@ export default function AIVisibility() {
                   onClick={handleAnalyze}
                   disabled={isAnalyzing}
                   data-testid="button-analyze"
+                  className="sm:w-auto w-full"
                 >
                   <Search className="w-4 h-4 mr-2" />
                   {isAnalyzing ? "Analyzing..." : "Analyze Citations"}
@@ -621,7 +622,7 @@ export default function AIVisibility() {
               <CardTitle>Query Analysis</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto -mx-1">
                 <Table>
                   <TableHeader>
                     <TableRow>

@@ -341,7 +341,7 @@ export default function FAQGenerator() {
             />
             <div className="space-y-2">
               <Label htmlFor="faq-input">URL or Topic</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1 relative">
                   <Input
                     id="faq-input"
@@ -378,6 +378,7 @@ export default function FAQGenerator() {
                   onClick={handleGenerate}
                   disabled={loading || !isInputValid}
                   data-testid="button-generate"
+                  className="sm:w-auto w-full"
                 >
                   <Search className="w-4 h-4 mr-2" />
                   {loading ? "Generating..." : "Generate FAQs"}

@@ -30,10 +30,10 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 const menuGroups = [
-  {
-    label: "Overview",
-    items: [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }],
-  },
+  // {
+  //   label: "Overview",
+  //   items: [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }],
+  // },
   {
     label: "Research",
     items: [
@@ -41,13 +41,13 @@ const menuGroups = [
       { title: "FAQ / Facts Generator", url: "/faq", icon: FileQuestion },
     ],
   },
-  {
-    label: "Content Intelligence",
-    items: [
-      { title: "Semantic Score Checker", url: "/semantic", icon: CheckCircle2 },
-      { title: "Semantic Content Generator", url: "/content-generator", icon: FileText },
-    ],
-  },
+  // {
+  //   label: "Content Intelligence",
+  //   items: [
+  //     { title: "Semantic Score Checker", url: "/semantic", icon: CheckCircle2 },
+  //     { title: "Semantic Content Generator", url: "/content-generator", icon: FileText },
+  //   ],
+  // },
   {
     label: "AI Visibility",
     items: [{ title: "AI Indexability & Citations", url: "/visibility", icon: Eye }],
@@ -55,16 +55,16 @@ const menuGroups = [
   {
     label: "Optimization",
     items: [
-      { title: "Keyword Clustering", url: "/clustering", icon: Network },
+      // { title: "Keyword Clustering", url: "/clustering", icon: Network },
       { title: "PBN Detector", url: "/pbn", icon: Shield },
-      { title: "Meta Tag Optimizer", url: "/meta", icon: Tag },
+      // { title: "Meta Tag Optimizer", url: "/meta", icon: Tag },
     ],
   },
   {
     label: "Project / Settings",
     items: [
-      { title: "Projects", url: "/projects", icon: FolderKanban },
-      { title: "Billing", url: "/billing", icon: CreditCard },
+      // { title: "Projects", url: "/projects", icon: FolderKanban },
+      // { title: "Billing", url: "/billing", icon: CreditCard },
       { title: "Settings", url: "/settings", icon: Settings },
     ],
   },

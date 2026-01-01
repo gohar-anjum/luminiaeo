@@ -306,7 +306,7 @@ export default function KeywordResearch() {
       {/* Query Input */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -327,6 +327,7 @@ export default function KeywordResearch() {
               onClick={handleSearch} 
               disabled={isCreating || !query.trim()}
               data-testid="button-search"
+              className="sm:w-auto w-full"
             >
               {isCreating ? (
                 <>
@@ -347,7 +348,6 @@ export default function KeywordResearch() {
       {/* Filters */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search keywords..."
             className="pl-10"
@@ -364,10 +364,9 @@ export default function KeywordResearch() {
           showSearch={true}
           disabled={isCreating}
         />
-
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button onClick={handleExport} variant="outline" data-testid="button-export">
           <Download className="w-4 h-4 mr-2" />
           Export CSV
@@ -448,8 +447,11 @@ export default function KeywordResearch() {
           </Card>
 
           <Card data-testid="card-keywords-table">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
+            <CardHeader>
+              <CardTitle>Keywords</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

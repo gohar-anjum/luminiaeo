@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { formatNumber, formatRelativeTime } from "@/utils/formatters";
-import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer } from "recharts";
-import { TrendingUp, BarChart3, Eye, Tag } from "lucide-react";
-import { Link } from "wouter";
+import { formatRelativeTime } from "@/utils/formatters";
+// import { formatNumber } from "@/utils/formatters";
+// import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer } from "recharts";
+// import { TrendingUp, BarChart3, Eye, Tag } from "lucide-react";
+// import { Link } from "wouter";
 import { registerMockData } from "@/lib/queryClient";
 import dashboardData from "@/data/dashboard.json";
 import { useEffect } from "react";
@@ -26,36 +27,35 @@ export default function Dashboard() {
           <Skeleton className="h-10 w-64 mb-2" />
           <Skeleton className="h-5 w-96" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-40" />
           ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-96 lg:col-span-2" />
+        </div> */}
+        <div className="grid grid-cols-1 gap-6">
           <Skeleton className="h-96" />
         </div>
       </div>
     );
   }
 
-  const metrics = data?.metrics;
-  const trendData = metrics?.queriesAnalyzed.trend.map((value: number, index: number) => ({
-    index,
-    value,
-  })) || [];
+  // const metrics = data?.metrics;
+  // const trendData = metrics?.queriesAnalyzed.trend.map((value: number, index: number) => ({
+  //   index,
+  //   value,
+  // })) || [];
 
-  const citationData = metrics?.aiCitationShare.breakdown.map((item: { name: string; value: number }) => ({
-    name: item.name,
-    value: item.value,
-  })) || [];
+  // const citationData = metrics?.aiCitationShare.breakdown.map((item: { name: string; value: number }) => ({
+  //   name: item.name,
+  //   value: item.value,
+  // })) || [];
 
-  const metaData = metrics?.metaHealth.breakdown.map((item: { name: string; value: number }) => ({
-    name: item.name,
-    value: item.value,
-  })) || [];
+  // const metaData = metrics?.metaHealth.breakdown.map((item: { name: string; value: number }) => ({
+  //   name: item.name,
+  //   value: item.value,
+  // })) || [];
 
-  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))"];
+  // const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))"];
 
   return (
     <div className="p-8 space-y-8">
@@ -66,9 +66,9 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Queries Analyzed */}
-        <Card data-testid="card-metric-queries">
+        {/* <Card data-testid="card-metric-queries">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Queries Analyzed</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -92,10 +92,10 @@ export default function Dashboard() {
               Last 30 days
             </p>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Avg Semantic Score */}
-        <Card data-testid="card-metric-semantic">
+        {/* <Card data-testid="card-metric-semantic">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg. Semantic Score</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -128,10 +128,10 @@ export default function Dashboard() {
               <span className="text-success">+{metrics?.avgSemanticScore.change}%</span> from last month
             </p>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* AI Citation Share */}
-        <Card data-testid="card-metric-citations">
+        {/* <Card data-testid="card-metric-citations">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">AI Citation Share</CardTitle>
             <Eye className="h-4 w-4 text-muted-foreground" />
@@ -159,10 +159,10 @@ export default function Dashboard() {
               Across major AI platforms
             </p>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Meta Health */}
-        <Card data-testid="card-metric-meta">
+        {/* <Card data-testid="card-metric-meta">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Meta Health</CardTitle>
             <Tag className="h-4 w-4 text-muted-foreground" />
@@ -181,11 +181,11 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Recent Activity */}
-        <Card className="lg:col-span-2" data-testid="card-recent-activity">
+        <Card className="me-12" data-testid="card-recent-activity">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
@@ -218,7 +218,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Pinned Reports */}
-        <Card data-testid="card-pinned-reports">
+        {/* <Card data-testid="card-pinned-reports">
           <CardHeader>
             <CardTitle>Pinned Reports</CardTitle>
           </CardHeader>
@@ -237,7 +237,7 @@ export default function Dashboard() {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

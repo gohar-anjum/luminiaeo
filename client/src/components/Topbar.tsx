@@ -1,6 +1,5 @@
-import { Bell, HelpCircle, Moon, Sun, User } from "lucide-react";
+import { Moon, Sun, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,20 +24,9 @@ export function Topbar() {
   };
 
   return (
-    <header className="flex items-center justify-between h-14 px-4 border-b bg-background sticky top-0 z-50">
-      <div className="flex items-center gap-2 flex-1">
-        <SidebarTrigger data-testid="button-sidebar-toggle" />
-        <div className="max-w-md w-full">
-          <Input
-            type="search"
-            placeholder="Search..."
-            className="w-full"
-            data-testid="input-search"
-          />
-        </div>
-      </div>
-
+    <header className="flex items-center justify-end h-14 px-4 border-b bg-background sticky top-0 z-50">
       <div className="flex items-center gap-2">
+        <SidebarTrigger data-testid="button-sidebar-toggle" />
         <Button
           variant="ghost"
           size="icon"
@@ -47,24 +35,6 @@ export function Topbar() {
           aria-label="Toggle theme"
         >
           {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          data-testid="button-help"
-          aria-label="Help"
-        >
-          <HelpCircle className="w-4 h-4" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          data-testid="button-notifications"
-          aria-label="Notifications"
-        >
-          <Bell className="w-4 h-4" />
         </Button>
 
         <DropdownMenu>
