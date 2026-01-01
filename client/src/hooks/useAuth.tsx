@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string, passwordConfirmation: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -185,8 +186,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("auth_token");
   };
 
+  const refreshUser = async () => {
+    const authToken = localStorage.getItem("auth_token");
+    if (!authToken) {
+      return;
+    }
+
+    try {
+      const headers: HeadersInit = {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${authToken}`,
+      };
+      
+      const res = await fetch(getApiUrl("/api/user"), {
+        credentials: "include",
+        headers,
+      });
+      
+      if (res.ok) {
+        const response = await res.json();
+        const userData = response.response?.user || response.user || response;
+        
+        const updatedUser = { 
+          name: userData.name || userData.email?.split("@")[0] || "", 
+          email: userData.email || "" 
+        };
+        
+        setUser(updatedUser);
+        localStorage.setItem("auth", JSON.stringify({ 
+          user: updatedUser 
+        }));
+      } else if (res.status === 401) {
+        setIsAuthenticated(false);
+        setUser(null);
+        localStorage.removeItem("auth");
+        localStorage.removeItem("auth_token");
+      }
+    } catch (error) {
+      console.error("Error refreshing user:", error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, isLoading, login, signup, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

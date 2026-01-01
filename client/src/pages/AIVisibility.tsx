@@ -292,7 +292,7 @@ export default function AIVisibility() {
 
     try {
       const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
-      const task = await apiClient.analyzeCitations({ url: normalizedUrl, num_queries: 200 });
+      const task = await apiClient.analyzeCitations({ url: normalizedUrl, num_queries: 10 });
       setTaskId(task.task_id);
       
       // If results_url is present and status is completed, fetch results directly

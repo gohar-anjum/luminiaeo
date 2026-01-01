@@ -50,40 +50,101 @@ export default function PBNDetector() {
   const fetchAndSetResults = useCallback(async (taskId: string) => {
     try {
       const results = await apiClient.getBacklinkResults({ task_id: taskId });
-      const responseData = results.results || results;
+      console.log("Backlink results response:", results);
       
-      // Only process if PBN detection is completed
-      const pbnDetection = responseData.pbn_detection as any;
-      if (pbnDetection && pbnDetection.status === "completed" && pbnDetection.items) {
-        const pbnMappedItems = (pbnDetection.items || []).map((item: any, index: number) => ({
-          id: `pbn-${index}`,
-          referringDomain: item.source_url || item.domain_from || "",
-          ip: item.signals?.ip || item.domain_from_ip || "",
-          da: item.signals?.domain_rank || item.domain_rank || 0,
-          spam: item.signals?.backlink_spam_score || item.backlink_spam_score || 0,
-          risk: item.risk_level || "low",
-          pbnProbability: item.pbn_probability || 0,
-          domainRank: item.signals?.domain_rank || item.domain_rank || 0,
-        }));
-        
-        const riskPriority: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
-        const sortedItems = pbnMappedItems.sort((a: any, b: any) => {
-          const riskDiff = riskPriority[b.risk] - riskPriority[a.risk];
-          if (riskDiff !== 0) return riskDiff;
-          return b.pbnProbability - a.pbnProbability;
-        });
-        
-        setPbnData(sortedItems);
-        setPbnSummary(pbnDetection.summary || null);
-        setBacklinksSummary(responseData.summary || null);
-        setShowResults(true);
+      // The API client's post() method returns data.response, so results is the inner response object
+      // Structure: { task_id, status, results: { summary, backlinks: { items: [...] }, pbn_detection: {...} } }
+      const overallStatus = (results as any).status;
+      const responseData = (results as any).results || results;
+      const pbnDetection = responseData?.pbn_detection as any;
+      const backlinksData = responseData?.backlinks?.items || [];
+      
+      console.log("Overall status:", overallStatus);
+      console.log("Response data:", responseData);
+      console.log("PBN detection:", pbnDetection);
+      console.log("Backlinks items count:", backlinksData.length);
+      
+      // Only process if overall status is completed
+      if (overallStatus === "completed") {
+        // Check if PBN detection has items (pbn_detection doesn't have a status field, just items and summary)
+        if (pbnDetection && pbnDetection.items && Array.isArray(pbnDetection.items) && pbnDetection.items.length > 0) {
+          const pbnMappedItems = pbnDetection.items.map((item: any, index: number) => ({
+            id: `pbn-${index}`,
+            referringDomain: item.source_url || item.domain_from || "",
+            ip: item.signals?.ip || item.domain_from_ip || "",
+            da: item.signals?.domain_rank || item.domain_rank || 0,
+            spam: item.signals?.backlink_spam_score || item.backlink_spam_score || 0,
+            risk: item.risk_level || "low",
+            pbnProbability: item.pbn_probability || 0,
+            domainRank: item.signals?.domain_rank || item.domain_rank || 0,
+            registrar: item.signals?.whois_registrar || item.whois_registrar || null,
+            domainAge: item.signals?.domain_age_days || item.domain_age_days || null,
+            reasons: item.reasons || [],
+            safeBrowsingStatus: item.signals?.safe_browsing_status || item.safe_browsing_status || null,
+          }));
+          
+          const riskPriority: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
+          const sortedItems = pbnMappedItems.sort((a: any, b: any) => {
+            const riskDiff = riskPriority[b.risk] - riskPriority[a.risk];
+            if (riskDiff !== 0) return riskDiff;
+            return b.pbnProbability - a.pbnProbability;
+          });
+          
+          setPbnData(sortedItems);
+          setPbnSummary(pbnDetection.summary || null);
+          setBacklinksSummary(responseData.summary || null);
+          setShowResults(true);
+          setIsAnalyzing(false);
+          toast({
+            title: "Analysis Complete",
+            description: `PBN detection completed successfully. Found ${pbnDetection.items.length} PBN backlinks.`,
+          });
+        } else if (backlinksData.length > 0) {
+          // PBN detection failed or not available, but backlinks are available
+          // Map backlinks to display format (without PBN analysis)
+          const mappedItems = backlinksData.map((backlink: any, index: number) => ({
+            id: `pbn-${index}`,
+            referringDomain: backlink.domain_from || backlink.url_from || "",
+            ip: backlink.domain_from_ip || "",
+            da: backlink.domain_from_rank || 0,
+            spam: backlink.backlink_spam_score || 0,
+            risk: "low", // Default since PBN detection failed/unavailable
+            pbnProbability: 0, // No PBN analysis available
+            domainRank: backlink.domain_from_rank || 0,
+          }));
+          
+          setPbnData(mappedItems);
+          setPbnSummary(null);
+          setBacklinksSummary(responseData.summary || null);
+          setShowResults(true);
+          setIsAnalyzing(false);
+          
+          toast({
+            title: "Analysis Complete",
+            description: `Backlinks retrieved successfully (${backlinksData.length} backlinks). PBN detection data not available.`,
+            variant: "default",
+          });
+        } else {
+          // Status completed but PBN detection structure is unexpected
+          console.warn("Status completed but PBN detection structure unexpected:", responseData);
+          setIsAnalyzing(false);
+          toast({
+            title: "Warning",
+            description: "Analysis completed but PBN detection data is unavailable.",
+            variant: "default",
+          });
+        }
+      } else {
+        console.warn("Status not completed:", overallStatus);
         setIsAnalyzing(false);
         toast({
-          title: "Analysis Complete",
-          description: "PBN detection completed successfully.",
+          title: "Warning",
+          description: "Analysis is still processing. Please wait...",
+          variant: "default",
         });
       }
     } catch (error: any) {
+      console.error("Error fetching results:", error);
       setIsAnalyzing(false);
       toast({
         title: "Error",
@@ -444,44 +505,106 @@ export default function PBNDetector() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Referring Domain</TableHead>
-                      <TableHead>IP Address</TableHead>
+                      <TableHead>Registrar</TableHead>
+                      <TableHead>Domain Age</TableHead>
                       <TableHead>Domain Rank</TableHead>
                       <TableHead>Spam Score</TableHead>
                       <TableHead>PBN Probability</TableHead>
+                      <TableHead>PBN Reasons</TableHead>
+                      <TableHead>Safe Browsing</TableHead>
                       <TableHead>Risk Level</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedPbnData.map((item: any) => (
-                      <TableRow key={item.id} data-testid={`row-pbn-${item.id}`}>
-                        <TableCell className="font-medium">
-                          <a 
-                            href={item.referringDomain} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            {item.referringDomain}
-                          </a>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{item.ip || "N/A"}</TableCell>
-                        <TableCell>{item.da || item.domainRank || "N/A"}</TableCell>
-                        <TableCell>{item.spam || 0}</TableCell>
-                        <TableCell>
-                          <span className="font-medium">
-                            {(item.pbnProbability * 100).toFixed(1)}%
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={getRiskBadgeClass(item.risk)}
-                            data-testid={`badge-risk-${item.id}`}
-                          >
-                            {item.risk.toUpperCase()}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {paginatedPbnData.map((item: any) => {
+                      // Format domain age
+                      const formatDomainAge = (days: number | null) => {
+                        if (!days) return "N/A";
+                        if (days < 365) return `${days} days`;
+                        const years = Math.floor(days / 365);
+                        const remainingDays = days % 365;
+                        if (remainingDays === 0) return `${years} year${years > 1 ? 's' : ''}`;
+                        return `${years} year${years > 1 ? 's' : ''} ${remainingDays} day${remainingDays > 1 ? 's' : ''}`;
+                      };
+
+                      // Format reason labels
+                      const formatReason = (reason: string) => {
+                        return reason
+                          .split('_')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ');
+                      };
+
+                      return (
+                        <TableRow key={item.id} data-testid={`row-pbn-${item.id}`}>
+                          <TableCell className="font-medium">
+                            <a 
+                              href={item.referringDomain.startsWith('http') ? item.referringDomain : `https://${item.referringDomain}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              {item.referringDomain.replace(/^https?:\/\//, '')}
+                            </a>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {item.registrar ? (
+                              <span className="text-muted-foreground">{item.registrar}</span>
+                            ) : (
+                              <span className="text-muted-foreground italic">N/A</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {formatDomainAge(item.domainAge)}
+                          </TableCell>
+                          <TableCell>{item.da || item.domainRank || "N/A"}</TableCell>
+                          <TableCell>{item.spam || 0}</TableCell>
+                          <TableCell>
+                            <span className="font-medium">
+                              {(item.pbnProbability * 100).toFixed(1)}%
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {item.reasons && item.reasons.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {item.reasons.slice(0, 2).map((reason: string, idx: number) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {formatReason(reason)}
+                                  </Badge>
+                                ))}
+                                {item.reasons.length > 2 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{item.reasons.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {item.safeBrowsingStatus ? (
+                              <Badge 
+                                variant={item.safeBrowsingStatus === "flagged" ? "destructive" : "secondary"}
+                                className="text-xs"
+                              >
+                                {item.safeBrowsingStatus === "flagged" ? "Flagged" : "Clean"}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={getRiskBadgeClass(item.risk)}
+                              data-testid={`badge-risk-${item.id}`}
+                            >
+                              {item.risk.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
                 <DataTablePagination

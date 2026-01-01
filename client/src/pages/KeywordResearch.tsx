@@ -32,6 +32,7 @@ import { DataTablePagination } from "@/components/ui/DataTablePagination";
 import { apiClient } from "@/lib/api/client";
 import type { KeywordResearchRequest, KeywordResearchStatus, KeywordResearchResults } from "@/lib/api/types";
 import { LocationSelector } from "@/components/LocationSelector";
+import { useLocation } from "wouter";
 
 type Keyword = {
   id: string;
@@ -45,6 +46,7 @@ type Keyword = {
 
 export default function KeywordResearch() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [locationCode, setLocationCode] = useState<number>(2840); // Default to US
@@ -241,6 +243,27 @@ export default function KeywordResearch() {
     });
   };
 
+  const handleGenerateFAQ = () => {
+    if (!data || data.length === 0) {
+      toast({
+        title: "Error",
+        description: "No keywords available to generate FAQs",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Use selected location code, or default to 2840 if none selected
+    const selectedLocationCode = locationCode || 2840;
+
+    // Navigate to FAQ page with location code and URL as query parameters
+    const params = new URLSearchParams({
+      location_code: selectedLocationCode.toString(),
+      url: query.trim() || "",
+    });
+    setLocation(`/faq?${params.toString()}`);
+  };
+
   // Get provider badge info from source
   const getProviderBadge = (source?: string) => {
     if (!source) return null;
@@ -353,10 +376,16 @@ export default function KeywordResearch() {
           <Plus className="w-4 h-4 mr-2" />
           Add to Cluster
         </Button> */}
-        <Button variant="outline" data-testid="button-generate-faq">
-          <FileText className="w-4 h-4 mr-2" />
-          Generate FAQs
-        </Button>
+        {data && data.length > 0 && (
+          <Button 
+            onClick={handleGenerateFAQ} 
+            variant="outline" 
+            data-testid="button-generate-faq"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Generate FAQs
+          </Button>
+        )}
       </div>
 
       {/* Job Status Card - Only show when creating or processing */}

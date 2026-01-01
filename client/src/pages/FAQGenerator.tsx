@@ -18,36 +18,30 @@ import {
   AlertCircle, 
   X, 
   Sparkles, 
-  Database,
   Copy,
   CheckCircle2,
   Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
-import type { FAQTaskResponse } from "@/lib/api/types";
+import type { FAQQuestion } from "@/lib/api/types";
 import { LocationSelector } from "@/components/LocationSelector";
-
-interface FAQ {
-  question: string;
-  answer: string;
-}
+import { useLocation } from "wouter";
 
 export default function FAQGenerator() {
   const { toast } = useToast();
+  const [location] = useLocation();
   const [input, setInput] = useState("");
   const [locationCode, setLocationCode] = useState<number>(2840); // Default to US
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [questions, setQuestions] = useState<FAQQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [taskStatus, setTaskStatus] = useState<"idle" | "pending" | "processing" | "completed" | "failed">("idle");
-  const [progress, setProgress] = useState<{
-    serpQuestionsCount?: number;
-    alsoAskedSearchId?: string;
-  } | null>(null);
+  const [progress, setProgress] = useState<number>(0);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasInitializedFromParams = useRef(false);
 
   const normalizeInput = useCallback((value: string): string => {
     const trimmed = value.trim();
@@ -61,6 +55,32 @@ export default function FAQGenerator() {
     return trimmed;
   }, []);
 
+  // Read query parameters on mount and set input and location code
+  useEffect(() => {
+    if (hasInitializedFromParams.current) return;
+    
+    try {
+      const url = new URL(window.location.href);
+      const urlParam = url.searchParams.get("url");
+      const locationCodeParam = url.searchParams.get("location_code");
+      
+      if (urlParam) {
+        setInput(urlParam);
+        hasInitializedFromParams.current = true;
+      }
+      
+      if (locationCodeParam) {
+        const parsedLocationCode = parseInt(locationCodeParam, 10);
+        if (!isNaN(parsedLocationCode)) {
+          setLocationCode(parsedLocationCode);
+          hasInitializedFromParams.current = true;
+        }
+      }
+    } catch (error) {
+      console.error("Error reading query parameters:", error);
+    }
+  }, [location]);
+
   // Cleanup polling on unmount
   useEffect(() => {
     return () => {
@@ -71,80 +91,55 @@ export default function FAQGenerator() {
     };
   }, []);
 
-  const pollTaskStatus = useCallback(async (
-    taskId: string,
-    maxAttempts: number = 120,
-    pollInterval: number = 5000
-  ) => {
-    let attempts = 0;
-    let isPolling = true;
+  const pollTaskStatus = useCallback(async (taskId: string) => {
+    // Clear any existing polling
+    if (pollIntervalRef.current) {
+      clearTimeout(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
 
     const poll = async () => {
-      if (!isPolling) return;
-
-      if (attempts >= maxAttempts) {
-        isPolling = false;
-        if (pollIntervalRef.current) {
-          clearTimeout(pollIntervalRef.current);
-          pollIntervalRef.current = null;
-        }
-        setLoading(false);
-        setError("Task polling timeout - task took too long to complete");
-        toast({
-          title: "Timeout",
-          description: "FAQ generation took too long. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       try {
         const response = await apiClient.getFaqTaskStatus(taskId);
-        const taskData = response.data;
+        
+        // Update status and progress
+        setTaskStatus(response.status);
+        setProgress(response.progress || 0);
+        
+        // Update questions - show them immediately when available
+        if (response.questions && Array.isArray(response.questions)) {
+          setQuestions(response.questions);
+        }
 
-        setTaskStatus(taskData.status);
-
-        if (taskData.status === "pending" || taskData.status === "processing") {
-          setProgress({
-            serpQuestionsCount: taskData.serp_questions_count,
-            alsoAskedSearchId: taskData.alsoasked_search_id,
+        // Check if completed or failed
+        if (response.status === "completed") {
+          if (pollIntervalRef.current) {
+            clearTimeout(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          setLoading(false);
+          toast({
+            title: "Success",
+            description: `Generated ${response.total_questions || response.questions.length} FAQs successfully`,
           });
-          // Continue polling
-          attempts++;
-          if (isPolling) {
-            pollIntervalRef.current = setTimeout(poll, pollInterval);
-          }
-        } else if (taskData.status === "completed") {
-          isPolling = false;
+        } else if (response.status === "failed") {
           if (pollIntervalRef.current) {
             clearTimeout(pollIntervalRef.current);
             pollIntervalRef.current = null;
           }
           setLoading(false);
-          if (taskData.faqs) {
-            setFaqs(taskData.faqs);
-            toast({
-              title: "Success",
-              description: `Generated ${taskData.faqs.length} FAQs successfully`,
-            });
-          }
-        } else if (taskData.status === "failed") {
-          isPolling = false;
-          if (pollIntervalRef.current) {
-            clearTimeout(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          setLoading(false);
-          const errorMsg = taskData.error_message || "Task failed";
+          const errorMsg = response.error || "Task failed";
           setError(errorMsg);
           toast({
             title: "Error",
             description: errorMsg,
             variant: "destructive",
           });
+        } else {
+          // Continue polling for pending/processing
+          pollIntervalRef.current = setTimeout(poll, 2000); // Poll every 2 seconds
         }
       } catch (err: any) {
-        isPolling = false;
         if (pollIntervalRef.current) {
           clearTimeout(pollIntervalRef.current);
           pollIntervalRef.current = null;
@@ -160,8 +155,8 @@ export default function FAQGenerator() {
       }
     };
 
-    // Poll immediately, then continue with recursive setTimeout
-    await poll();
+    // Start polling immediately
+    poll();
   }, [toast]);
 
   const handleGenerate = async () => {
@@ -183,37 +178,39 @@ export default function FAQGenerator() {
 
     setLoading(true);
     setError(null);
-    setFaqs([]);
+    setQuestions([]);
     setTaskStatus("idle");
-    setProgress(null);
+    setProgress(0);
     setTaskId(null);
 
     try {
       const normalizedInput = normalizeInput(input);
       const response = await apiClient.createFaqTask({
         input: normalizedInput,
-        location_code: locationCode,
-        options: { temperature: 0.9 },
+        options: { 
+          temperature: 0.9,
+          location_code: locationCode,
+        },
       });
 
-      // Validate response structure
-      if (!response || !response.data || !response.data.task_id) {
+      // Get task_id from response
+      const newTaskId = response.task_id;
+      if (!newTaskId) {
         throw new Error("Invalid response from server: missing task_id");
       }
 
-      const newTaskId = response.data.task_id;
       setTaskId(newTaskId);
-      setTaskStatus(response.data.status || "pending");
+      setTaskStatus(response.status || "pending");
+      setProgress(response.progress || 0);
 
       // Show success toast for task creation
       toast({
         title: "Task Created",
-        description: "FAQ generation task started. Polling for status...",
+        description: "FAQ generation started",
       });
 
-      // Start polling for status (don't await - let it run in background)
+      // Start polling for status
       pollTaskStatus(newTaskId).catch((pollError: any) => {
-        // Polling errors are handled within pollTaskStatus, but catch here to prevent unhandled promise rejection
         console.error("Polling error:", pollError);
       });
     } catch (err: any) {
@@ -266,17 +263,19 @@ export default function FAQGenerator() {
       pollIntervalRef.current = null;
     }
     setInput("");
-    setFaqs([]);
+    setQuestions([]);
     setError(null);
     setTaskStatus("idle");
-    setProgress(null);
+    setProgress(0);
     setTaskId(null);
     setLoading(false);
     setCopiedIndex(null);
   };
 
-  const handleCopyFAQ = async (faq: FAQ, index: number) => {
-    const text = `Q: ${faq.question}\n\nA: ${faq.answer}`;
+  const handleCopyFAQ = async (question: FAQQuestion, index: number) => {
+    if (!question.has_answer || !question.answer) return;
+    
+    const text = `Q: ${question.question}\n\nA: ${question.answer}`;
     try {
       await navigator.clipboard.writeText(text);
       setCopiedIndex(index);
@@ -295,9 +294,10 @@ export default function FAQGenerator() {
   };
 
   const handleCopyAll = async () => {
-    if (faqs.length === 0) return;
+    const faqsWithAnswers = questions.filter(q => q.has_answer && q.answer);
+    if (faqsWithAnswers.length === 0) return;
     
-    const text = faqs
+    const text = faqsWithAnswers
       .map((faq, index) => `${index + 1}. Q: ${faq.question}\n\nA: ${faq.answer}`)
       .join("\n\n---\n\n");
     
@@ -318,13 +318,14 @@ export default function FAQGenerator() {
 
   const remainingChars = 2048 - input.length;
   const isInputValid = input.trim().length > 0 && input.length <= 2048;
+  const faqsWithAnswers = questions.filter(q => q.has_answer && q.answer);
 
   return (
     <div className="p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">FAQ Generator</h1>
         <p className="text-muted-foreground">
-          Generate 10 high-quality, SEO-optimized FAQs based on a URL or topic
+          Generate high-quality, SEO-optimized FAQs based on a URL or topic
         </p>
       </div>
 
@@ -390,46 +391,17 @@ export default function FAQGenerator() {
                     </span>
                   )}
                 </span>
-                <span>Processing may take up to 10 minutes</span>
               </div>
             </div>
 
+            {/* Progress Bar */}
             {loading && (
-              <div className="space-y-3">
-                {taskStatus === "pending" && (
-                  <>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Waiting for AlsoAsked API to complete...</span>
-                    </div>
-                    {progress?.alsoAskedSearchId && (
-                      <div className="text-xs text-muted-foreground pl-6">
-                        Search ID: {progress.alsoAskedSearchId}
-                      </div>
-                    )}
-                    <Progress value={undefined} className="h-2" />
-                  </>
-                )}
-                {taskStatus === "processing" && (
-                  <>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Sparkles className="w-4 h-4 animate-pulse" />
-                      <span>Generating FAQs with Gemini...</span>
-                    </div>
-                    {progress?.serpQuestionsCount !== undefined && (
-                      <div className="text-xs text-muted-foreground pl-6">
-                        Processing {progress.serpQuestionsCount} SERP questions
-                      </div>
-                    )}
-                    <Progress value={undefined} className="h-2" />
-                  </>
-                )}
-                {taskStatus === "idle" && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Creating task...</span>
-                  </div>
-                )}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="text-muted-foreground">{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
               </div>
             )}
 
@@ -440,37 +412,11 @@ export default function FAQGenerator() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
-            {taskId && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="font-mono text-xs">
-                  Task: {taskId.substring(0, 16)}...
-                </Badge>
-                {taskStatus === "pending" && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Waiting for AlsoAsked
-                  </Badge>
-                )}
-                {taskStatus === "processing" && (
-                  <Badge variant="default" className="gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    Generating FAQs
-                  </Badge>
-                )}
-                {taskStatus === "completed" && (
-                  <Badge variant="default" className="gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Completed
-                  </Badge>
-                )}
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
 
-      {loading && !faqs.length && (
+      {loading && questions.length === 0 && (
         <div className="space-y-4">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
@@ -478,57 +424,104 @@ export default function FAQGenerator() {
         </div>
       )}
 
-      {faqs.length > 0 && (
+      {questions.length > 0 && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Generated FAQs ({faqs.length})</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyAll}
-                className="gap-2"
-              >
-                <Copy className="w-4 h-4" />
-                Copy All
-              </Button>
+              <CardTitle>
+                Questions ({questions.length})
+                {faqsWithAnswers.length > 0 && (
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    {faqsWithAnswers.length} with answers
+                  </span>
+                )}
+              </CardTitle>
+              {faqsWithAnswers.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyAll}
+                  className="gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy All
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
-              {faqs.map((faq, index) => (
+              {questions.map((questionItem, index) => (
                 <AccordionItem key={index} value={`faq-${index}`}>
                   <AccordionTrigger className="text-left">
                     <div className="flex items-start gap-3 flex-1 pr-4">
                       <span className="text-sm font-medium text-muted-foreground min-w-[2rem]">
                         {index + 1}.
                       </span>
-                      <span className="font-medium">{faq.question}</span>
+                      <span className="font-medium flex-1">{questionItem.question}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {questionItem.has_answer ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        )}
+                      </span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-3 pl-11">
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {faq.answer}
-                      </p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCopyFAQ(faq, index)}
-                        className="gap-2"
-                      >
-                        {copiedIndex === index ? (
-                          <>
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4" />
-                            Copy
-                          </>
-                        )}
-                      </Button>
+                    <div className="space-y-4 pl-11">
+                      {questionItem.has_answer && questionItem.answer ? (
+                        <>
+                          <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                              {questionItem.answer}
+                            </p>
+                          </div>
+
+                          {/* Keyword Focused Section */}
+                          {questionItem.keywords && questionItem.keywords.length > 0 && (
+                            <div className="mt-6 p-5 rounded-xl bg-gradient-to-br from-purple-600 to-purple-800 text-white">
+                              <h4 className="text-sm font-semibold uppercase tracking-wide mb-3 opacity-90">
+                                Keyword Focused
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {questionItem.keywords.map((keyword, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-block px-3 py-1.5 text-xs font-medium bg-white/20 backdrop-blur-sm rounded-full border border-white/30 hover:bg-white/30 hover:-translate-y-0.5 transition-all duration-200"
+                                  >
+                                    {keyword}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyFAQ(questionItem, index)}
+                            className="gap-2"
+                          >
+                            {copiedIndex === index ? (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-4 h-4" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="py-5 text-center text-muted-foreground italic">
+                          <Loader2 className="w-5 h-5 animate-spin inline-block mr-2" />
+                          Preparing answers while targeting keywords...
+                        </div>
+                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -538,7 +531,7 @@ export default function FAQGenerator() {
         </Card>
       )}
 
-      {!loading && !faqs.length && !error && (
+      {!loading && questions.length === 0 && !error && (
         <Card>
           <CardContent className="p-12">
             <div className="text-center space-y-2">

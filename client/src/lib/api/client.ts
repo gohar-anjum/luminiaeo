@@ -42,6 +42,8 @@ import type {
   LocationCodesCountriesResponse,
   LocationCodesResponse,
   LocationCodeResponse,
+  ProfileUpdateRequest,
+  ProfileUpdateResponse,
 } from "./types";
 
 export class ApiError extends Error {
@@ -135,6 +137,13 @@ export class ApiClient {
     });
   }
 
+  private async put<T>(endpoint: string, body?: any): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "PUT",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  }
+
   // Authentication Methods
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     const response = await fetch(getApiUrl("/api/login"), {
@@ -162,6 +171,10 @@ export class ApiClient {
       data.message || "Login failed",
       data.status || response.status
     );
+  }
+
+  async updateProfile(request: ProfileUpdateRequest): Promise<ProfileUpdateResponse> {
+    return this.put<ProfileUpdateResponse>("/api/user/profile", request);
   }
 
   async register(userData: RegisterRequest): Promise<void> {
@@ -372,50 +385,18 @@ export class ApiClient {
       );
     }
 
-    // Handle different response formats
-    // Format 1: { success: true, message: "...", data: {...} }
-    if (data.success && data.data) {
+    // New format: { status: 200, message: "...", response: { task_id, status, progress } }
+    if (data.status === 200 && data.response) {
+      return data.response;
+    }
+
+    // Fallback: try to extract task_id from various possible locations
+    if (data.response?.task_id) {
+      return data.response;
+    }
+
+    if (data.task_id) {
       return data;
-    }
-
-    // Format 2: { status: 200, message: "...", response: {...} }
-    if ((data.status === 200 || data.status === "success") && data.response) {
-      // Check if response has the expected structure
-      const responseData = data.response;
-      if (responseData && (responseData.task_id || responseData.data?.task_id)) {
-        return {
-          success: true,
-          message: data.message || "FAQ task created successfully",
-          data: responseData.task_id ? responseData : responseData.data || responseData,
-        };
-      }
-    }
-
-    // If response is OK but format is unexpected, try to extract task_id from various possible locations
-    // This provides more lenient handling for different API response formats
-    let taskId: string | undefined;
-    let taskData: any;
-
-    if (data.data?.task_id) {
-      taskId = data.data.task_id;
-      taskData = data.data;
-    } else if (data.task_id) {
-      taskId = data.task_id;
-      taskData = data;
-    } else if (data.response?.task_id) {
-      taskId = data.response.task_id;
-      taskData = data.response;
-    } else if (data.response?.data?.task_id) {
-      taskId = data.response.data.task_id;
-      taskData = data.response.data;
-    }
-
-    if (taskId && taskData) {
-      return {
-        success: true,
-        message: data.message || "FAQ task created successfully",
-        data: taskData,
-      };
     }
 
     // If we get here, the response format is truly unexpected
@@ -441,53 +422,33 @@ export class ApiClient {
     }
 
     // If response is not OK, throw error
-    if (!response.ok) {
+    if (!response.ok || (data.status && data.status >= 400)) {
       throw new ApiError(
         data.message || "Failed to get task status",
-        response.status,
+        response.status || data.status || 500,
         data
       );
     }
 
-    // Handle different response formats
-    // Format 1: { success: true, message: "...", data: {...} }
-    if (data.success && data.data) {
+    // New format: { status: 200, message: "...", response: { status, progress, questions, total_questions, error? } }
+    if (data.status === 200 && data.response) {
+      return data.response;
+    }
+
+    // Fallback for older formats
+    if (data.response) {
+      return data.response;
+    }
+
+    if (data.status || data.questions) {
       return data;
-    }
-
-    // Format 2: { status: 200, message: "...", response: {...} }
-    if ((data.status === 200 || data.status === "success") && data.response) {
-      return {
-        success: true,
-        message: data.message || "Task status retrieved successfully",
-        data: data.response,
-      };
-    }
-
-    // Try to extract task data from various possible locations (more lenient handling)
-    let taskData: any;
-
-    if (data.data) {
-      taskData = data.data;
-    } else if (data.response) {
-      taskData = data.response;
-    } else if (data.task_id || data.status) {
-      taskData = data;
-    }
-
-    if (taskData && (taskData.task_id || taskData.status)) {
-      return {
-        success: true,
-        message: data.message || "Task status retrieved successfully",
-        data: taskData,
-      };
     }
 
     // If we get here, the response format is unexpected
     console.error("Unexpected FAQ task status response format:", data);
     throw new ApiError(
       data.message || "Unexpected response format from FAQ task status API",
-      response.status,
+      response.status || 500,
       data
     );
   }

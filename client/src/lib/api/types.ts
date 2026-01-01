@@ -40,8 +40,22 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  email_verified_at?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Profile Update Types
+export interface ProfileUpdateRequest {
+  name?: string; // optional, string, 3-50 characters
+  email?: string; // optional, string, valid email, must be unique
+  current_password?: string; // required if updating password
+  password?: string; // required if updating password, min: 8
+  password_confirmation?: string; // required if updating password, min: 8
+}
+
+export interface ProfileUpdateResponse {
+  user: User;
 }
 
 // Keyword Research Types
@@ -340,24 +354,25 @@ export interface FAQTaskRequest {
   location_code?: number;
   options?: {
     temperature?: number;
+    language_code?: string;
+    location_code?: number;
   };
 }
 
+export interface FAQQuestion {
+  question: string;
+  keywords: string[];
+  has_answer: boolean;
+  answer: string | null;
+}
+
 export interface FAQTaskResponse {
-  success: boolean;
-  message: string;
-  data: {
-    task_id: string;
-    status: "pending" | "processing" | "completed" | "failed";
-    created_at: string;
-    updated_at?: string;
-    completed_at?: string;
-    faqs?: FAQ[];
-    faqs_count?: number;
-    error_message?: string;
-    serp_questions_count?: number;
-    alsoasked_search_id?: string;
-  };
+  task_id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  progress: number;
+  questions: FAQQuestion[];
+  total_questions: number;
+  error?: string;
 }
 
 export interface FAQGenerateResponse {
