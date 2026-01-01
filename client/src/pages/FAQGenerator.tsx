@@ -16,7 +16,6 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Search, 
   AlertCircle, 
-  X, 
   Sparkles, 
   Copy,
   CheckCircle2,
@@ -256,22 +255,6 @@ export default function FAQGenerator() {
     }
   };
 
-  const handleClear = () => {
-    // Clear polling if active
-    if (pollIntervalRef.current) {
-      clearTimeout(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-    setInput("");
-    setQuestions([]);
-    setError(null);
-    setTaskStatus("idle");
-    setProgress(0);
-    setTaskId(null);
-    setLoading(false);
-    setCopiedIndex(null);
-  };
-
   const handleCopyFAQ = async (question: FAQQuestion, index: number) => {
     if (!question.has_answer || !question.answer) return;
     
@@ -316,7 +299,6 @@ export default function FAQGenerator() {
     }
   };
 
-  const remainingChars = 2048 - input.length;
   const isInputValid = input.trim().length > 0 && input.length <= 2048;
   const faqsWithAnswers = questions.filter(q => q.has_answer && q.answer);
 
@@ -332,17 +314,17 @@ export default function FAQGenerator() {
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
-            <LocationSelector
-              value={locationCode}
-              onChange={setLocationCode}
-              label="Target Location"
-              showSearch={true}
-              disabled={loading}
-            />
-            <div className="space-y-2">
-              <Label htmlFor="faq-input">URL or Topic</Label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 relative">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <LocationSelector
+                value={locationCode}
+                onChange={setLocationCode}
+                label="Target Location"
+                showSearch={true}
+                disabled={loading}
+              />
+              <div className="space-y-2">
+                <Label htmlFor="faq-input">URL or Topic</Label>
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Input
                     id="faq-input"
                     type="text"
@@ -354,7 +336,6 @@ export default function FAQGenerator() {
                     placeholder="Enter a URL (e.g., https://example.com) or topic (e.g., digital marketing)"
                     maxLength={2048}
                     disabled={loading}
-                    className="pr-20"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey && isInputValid && !loading) {
                         e.preventDefault();
@@ -362,36 +343,16 @@ export default function FAQGenerator() {
                       }
                     }}
                   />
-                  {input && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                      onClick={handleClear}
-                      disabled={loading}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={loading || !isInputValid}
+                    data-testid="button-generate"
+                    className="sm:w-auto w-full"
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    {loading ? "Generating..." : "Generate FAQs"}
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleGenerate}
-                  disabled={loading || !isInputValid}
-                  data-testid="button-generate"
-                  className="sm:w-auto w-full"
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  {loading ? "Generating..." : "Generate FAQs"}
-                </Button>
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {input.length > 0 && (
-                    <span className={remainingChars < 0 ? "text-destructive" : ""}>
-                      {remainingChars} characters remaining
-                    </span>
-                  )}
-                </span>
               </div>
             </div>
 
