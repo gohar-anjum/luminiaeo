@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Download, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
 import { usePagination } from "@/hooks/usePagination";
@@ -31,7 +31,6 @@ export default function PBNDetector() {
   const [pbnData, setPbnData] = useState<any[]>([]);
   const [pbnSummary, setPbnSummary] = useState<any>(null);
   const [backlinksSummary, setBacklinksSummary] = useState<any>(null);
-  const [isExporting, setIsExporting] = useState(false);
   
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const maxPollingTime = 10 * 60 * 1000; // 10 minutes
@@ -261,98 +260,15 @@ export default function PBNDetector() {
     }
   };
 
-  const handleExportDisavow = async () => {
-    if (!domain) {
-      toast({
-        title: "Error",
-        description: "Please analyze a domain first",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsExporting(true);
-    try {
-      toast({
-        title: "Exporting...",
-        description: "Generating disavow.txt file...",
-      });
-
-      const response = await apiClient.getHarmfulBacklinks({
-        domain,
-        risk_levels: ["high", "critical"],
-      });
-
-      const responseData = (response as any).response || response;
-      if (responseData && responseData.backlinks) {
-        const backlinks = responseData.backlinks;
-        
-        if (backlinks.length === 0) {
-          toast({
-            title: "No harmful backlinks",
-            description: "No high or critical risk backlinks found to disavow",
-            variant: "default",
-          });
-          return;
-        }
-
-        const domains = new Set<string>();
-        backlinks.forEach((backlink: any) => {
-          if (backlink.source_domain) {
-            domains.add(backlink.source_domain);
-          } else if (backlink.source_url) {
-            try {
-              const url = new URL(backlink.source_url);
-              domains.add(url.hostname.replace(/^www\./, ""));
-            } catch {
-              if (backlink.source_url) {
-                domains.add(backlink.source_url);
-              }
-            }
-          }
-        });
-
-        const disavowContent = Array.from(domains)
-          .sort()
-          .map((domain) => `Domain: ${domain}`)
-          .join("\n");
-
-        const blob = new Blob([disavowContent], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "disavow.txt";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        toast({
-          title: "Success",
-          description: `Disavow file downloaded with ${domains.size} domains`,
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to generate disavow file",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to export disavow file",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const highRiskCount = pbnSummary?.high_risk_count ?? (pbnData?.filter((d: any) => d.risk === "high").length || 0);
   const mediumRiskCount = pbnSummary?.medium_risk_count ?? (pbnData?.filter((d: any) => d.risk === "medium").length || 0);
   const lowRiskCount = pbnSummary?.low_risk_count ?? (pbnData?.filter((d: any) => d.risk === "low").length || 0);
   const totalBacklinks = backlinksSummary?.backlinks ?? pbnData.length;
+  
+  // Calculate average PBN probability
+  const averagePbnProbability = pbnData.length > 0
+    ? pbnData.reduce((sum: number, item: any) => sum + (item.pbnProbability || 0), 0) / pbnData.length
+    : 0;
 
   const {
     currentPage,
@@ -452,7 +368,7 @@ export default function PBNDetector() {
 
       {showResults && pbnData && pbnData.length > 0 && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card data-testid="card-total">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Backlinks</CardTitle>
@@ -460,6 +376,16 @@ export default function PBNDetector() {
               <CardContent>
                 <div className="text-3xl font-bold">{totalBacklinks.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground mt-1">Referring domains analyzed</p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-pbn-probability">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Approximate PBN Probability</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-orange-600">{(averagePbnProbability * 100).toFixed(1)}%</div>
+                <p className="text-xs text-muted-foreground mt-1">Average across all detected backlinks</p>
               </CardContent>
             </Card>
 
@@ -473,26 +399,15 @@ export default function PBNDetector() {
               </CardContent>
             </Card>
 
-            <Card data-testid="card-disavow">
+            <Card data-testid="card-medium-risk">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Disavow Candidates</CardTitle>
+                <CardTitle className="text-sm font-medium">Medium-Risk Domains</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{highRiskCount + mediumRiskCount}</div>
-                <p className="text-xs text-muted-foreground mt-1">Recommended for disavow</p>
+                <div className="text-3xl font-bold text-orange-500">{mediumRiskCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">Moderate risk level</p>
               </CardContent>
             </Card>
-          </div>
-
-          <div className="flex justify-end">
-            <Button 
-              onClick={handleExportDisavow} 
-              disabled={isExporting}
-              data-testid="button-export-disavow"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {isExporting ? "Exporting..." : "Export disavow.txt"}
-            </Button>
           </div>
 
           <Card data-testid="card-table">
