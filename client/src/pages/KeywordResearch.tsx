@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { formatNumber, formatCurrency } from "@/utils/formatters";
 import { Search, Download, Plus, FileText, ArrowUpDown, Loader2, Database } from "lucide-react";
@@ -60,6 +61,9 @@ export default function KeywordResearch() {
   const [jobStatus, setJobStatus] = useState<KeywordResearchStatus | null>(null);
   const [jobResults, setJobResults] = useState<KeywordResearchResults | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Selection State
+  const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
 
   // Register mock data for this endpoint (fallback)
   useEffect(() => {
@@ -205,6 +209,7 @@ export default function KeywordResearch() {
     setIsCreating(true);
     setJobResults(null);
     setJobStatus(null);
+    setSelectedKeywords(new Set()); // Reset selections when starting new search
 
     try {
       const request: KeywordResearchRequest = {
@@ -236,10 +241,87 @@ export default function KeywordResearch() {
     }
   };
 
+  const handleToggleSelect = (keywordId: string) => {
+    setSelectedKeywords((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(keywordId)) {
+        newSet.delete(keywordId);
+      } else {
+        newSet.add(keywordId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (checked: boolean | "indeterminate") => {
+    if (checked === true) {
+      // Select all items on current page
+      const currentPageIds = new Set(paginatedData.map((kw: any) => kw.id));
+      setSelectedKeywords((prev) => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach((id) => newSet.add(id));
+        return newSet;
+      });
+    } else {
+      // Deselect all items on current page
+      const currentPageIds = new Set(paginatedData.map((kw: any) => kw.id));
+      setSelectedKeywords((prev) => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach((id) => newSet.delete(id));
+        return newSet;
+      });
+    }
+  };
+
   const handleExport = () => {
+    if (selectedKeywords.size === 0) {
+      toast({
+        title: "No keywords selected",
+        description: "Please select keywords to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const keywordsToExport = filteredData.filter((kw: any) => selectedKeywords.has(kw.id));
+
+    if (keywordsToExport.length === 0) {
+      toast({
+        title: "No keywords to export",
+        description: "Selected keywords are not available in the current view",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create CSV content
+    const headers = ["Keyword", "Volume", "CPC", "Competition"];
+    const rows = keywordsToExport.map((kw: any) => [
+      kw.keyword,
+      kw.volume,
+      kw.cpc ?? 0,
+      kw.competition,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+    ].join("\n");
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `keywords-${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
     toast({
-      title: "Export started",
-      description: "Your keyword data is being exported to CSV...",
+      title: "Export successful",
+      description: `Exported ${keywordsToExport.length} keyword${keywordsToExport.length > 1 ? "s" : ""} to CSV`,
     });
   };
 
@@ -366,16 +448,21 @@ export default function KeywordResearch() {
         />
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={handleExport} variant="outline" data-testid="button-export">
-          <Download className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
+      {data && data.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <Button 
+            onClick={handleExport} 
+            variant="outline" 
+            data-testid="button-export"
+            disabled={selectedKeywords.size === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV {selectedKeywords.size > 0 ? `(${selectedKeywords.size})` : ""}
+          </Button>
         {/* <Button variant="outline" data-testid="button-add-cluster">
           <Plus className="w-4 h-4 mr-2" />
           Add to Cluster
         </Button> */}
-        {data && data.length > 0 && (
           <Button 
             onClick={handleGenerateFAQ} 
             variant="outline" 
@@ -384,8 +471,8 @@ export default function KeywordResearch() {
             <FileText className="w-4 h-4 mr-2" />
             Generate FAQs
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Job Status Card - Only show when creating or processing */}
       {(isCreating || (jobStatus && jobStatus.status === "processing")) && (
@@ -455,6 +542,20 @@ export default function KeywordResearch() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={
+                        paginatedData.length > 0 && 
+                        paginatedData.every((kw: any) => selectedKeywords.has(kw.id))
+                          ? true
+                          : paginatedData.some((kw: any) => selectedKeywords.has(kw.id))
+                          ? "indeterminate"
+                          : false
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead
                     className="cursor-pointer hover-elevate"
                     onClick={() => handleSort("keyword")}
@@ -496,7 +597,7 @@ export default function KeywordResearch() {
               <TableBody>
                 {paginatedData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       {jobStatus?.status === "processing" ? (
                         <div className="flex flex-col items-center gap-2">
                           <Loader2 className="w-6 h-6 animate-spin" />
@@ -510,6 +611,13 @@ export default function KeywordResearch() {
                 ) : (
                   paginatedData.map((keyword: any) => (
                     <TableRow key={keyword.id} data-testid={`row-keyword-${keyword.id}`}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedKeywords.has(keyword.id)}
+                          onCheckedChange={() => handleToggleSelect(keyword.id)}
+                          aria-label={`Select ${keyword.keyword}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{keyword.keyword}</TableCell>
                       <TableCell>{formatNumber(keyword.volume)}</TableCell>
                       <TableCell>{formatCurrency(keyword.cpc)}</TableCell>
