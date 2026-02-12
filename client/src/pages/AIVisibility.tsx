@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
+import { PhaseLoader } from "@/components/PhaseLoader";
 import {
   Table,
   TableBody,
@@ -17,6 +16,7 @@ import {
 import { Search, CheckCircle2, XCircle, RefreshCw, AlertCircle } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useToast } from "@/hooks/use-toast";
+import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
 import { apiClient, pollCitationStatus, handleApiError } from "@/lib/api";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
@@ -111,6 +111,7 @@ interface CitationResult {
 
 export default function AIVisibility() {
   const { toast } = useToast();
+  const { setPhase } = useLoadingPhase();
   const [url, setUrl] = useState("");
   const [taskId, setTaskId] = useState<number | null>(null);
   const [taskStatus, setTaskStatus] = useState<CitationTaskStatus | null>(null);
@@ -163,12 +164,14 @@ export default function AIVisibility() {
       };
       setResults(mappedResults);
       setIsAnalyzing(false);
+      setPhase(null);
       toast({
         title: "Analysis Complete",
         description: "Citation analysis completed successfully.",
       });
     } catch (error: any) {
       setIsAnalyzing(false);
+      setPhase(null);
       const { message } = handleApiError(error);
       toast({
         title: "Error",
@@ -176,13 +179,13 @@ export default function AIVisibility() {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, setPhase]);
 
   const startPolling = useCallback((taskId: number) => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
     }
-    
+    setPhase("Analyzing citations…");
     pollingStartTimeRef.current = Date.now();
     
     const poll = async () => {
@@ -192,6 +195,7 @@ export default function AIVisibility() {
           pollingIntervalRef.current = null;
         }
         setIsAnalyzing(false);
+        setPhase(null);
         toast({
           title: "Timeout",
           description: "Analysis took too long. Please try again.",
@@ -227,7 +231,8 @@ export default function AIVisibility() {
             pollingIntervalRef.current = null;
           }
           setIsAnalyzing(false);
-          const mappedStatus: CitationTaskStatus = {
+          setPhase(null);
+          const mappedStatusFailed: CitationTaskStatus = {
             task_id: status.task_id,
             status: status.status as any,
             progress: status.progress ? {
@@ -238,7 +243,7 @@ export default function AIVisibility() {
             } : undefined,
             meta: status.meta,
           };
-          const errors = mappedStatus.meta?.errors || [];
+          const errors = mappedStatusFailed.meta?.errors || [];
           toast({
             title: "Analysis Failed",
             description: errors.length > 0 ? errors.join(", ") : "Task failed",
@@ -251,6 +256,7 @@ export default function AIVisibility() {
           pollingIntervalRef.current = null;
         }
         setIsAnalyzing(false);
+        setPhase(null);
         const { message } = handleApiError(error);
         toast({
           title: "Error",
@@ -262,7 +268,7 @@ export default function AIVisibility() {
 
     poll();
     pollingIntervalRef.current = setInterval(poll, 5000);
-  }, [toast, maxPollingTime, fetchAndSetResults]);
+  }, [toast, maxPollingTime, fetchAndSetResults, setPhase]);
 
   const handleAnalyze = async () => {
     if (!url) {
@@ -308,6 +314,7 @@ export default function AIVisibility() {
       }
     } catch (error: any) {
       setIsAnalyzing(false);
+      setPhase(null);
       const { message } = handleApiError(error);
       toast({
         title: "Error",
@@ -321,6 +328,7 @@ export default function AIVisibility() {
     if (!taskId) return;
 
     setIsRetrying(true);
+    setPhase("Retrying citation analysis…");
     try {
       await apiClient.retryCitationAnalysis(taskId);
       toast({
@@ -329,6 +337,7 @@ export default function AIVisibility() {
       });
       startPolling(taskId);
     } catch (error: any) {
+      setPhase(null);
       const { message } = handleApiError(error);
       toast({
         title: "Error",
@@ -337,6 +346,7 @@ export default function AIVisibility() {
       });
     } finally {
       setIsRetrying(false);
+      setPhase(null);
     }
   };
 
@@ -406,10 +416,6 @@ export default function AIVisibility() {
 
   const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))"];
 
-  const progressPercentage = taskStatus?.progress
-    ? Math.round((taskStatus.progress.processed / taskStatus.progress.total) * 100)
-    : 0;
-
   return (
     <div className="p-8 space-y-6">
       <div>
@@ -458,18 +464,17 @@ export default function AIVisibility() {
             <CardTitle>Analysis Progress</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Status: {taskStatus.status}</span>
-                {taskStatus.progress && (
-                  <span>
-                    {taskStatus.progress.processed} / {taskStatus.progress.total} queries
-                  </span>
-                )}
-              </div>
-              {taskStatus.progress && (
-                <Progress value={progressPercentage} className="h-2" />
-              )}
+            <div className="flex justify-center py-6">
+              <PhaseLoader
+                phase={
+                  taskStatus.status === "failed"
+                    ? "Analysis failed"
+                    : taskStatus.progress
+                      ? `Analyzing citations… ${taskStatus.progress.processed}/${taskStatus.progress.total} queries`
+                      : "Analyzing citations…"
+                }
+                size="lg"
+              />
             </div>
             {taskStatus.status === "failed" && taskStatus.meta?.errors && (
               <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-md">
@@ -489,11 +494,14 @@ export default function AIVisibility() {
       )}
 
       {isAnalyzing && !taskStatus && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Analysis Progress</CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center py-10">
+            <PhaseLoader phase="Initiating citation analysis…" size="lg" />
+          </CardContent>
+        </Card>
       )}
 
       {results && (
@@ -628,7 +636,9 @@ export default function AIVisibility() {
                     <TableRow>
                       <TableHead>Query</TableHead>
                       <TableHead>{isDataForSEO ? 'DataForSEO' : 'GPT'}</TableHead>
+                      <TableHead>GPT Cited URL(s)</TableHead>
                       <TableHead>Gemini</TableHead>
+                      <TableHead>Gemini Cited URL(s)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -638,15 +648,21 @@ export default function AIVisibility() {
                         queryResult.query ||
                         results?.queries?.[actualIndex] ||
                         `Query ${actualIndex + 1}`;
+                      const gptUrls = (queryResult.gpt.citation_references || []).map((ref) =>
+                        typeof ref === "string" ? ref : ref?.url ?? ""
+                      ).filter(Boolean);
+                      const geminiUrls = (queryResult.gemini.citation_references || []).map((ref) =>
+                        typeof ref === "string" ? ref : ref?.url ?? ""
+                      ).filter(Boolean);
                       return (
                         <TableRow key={`${queryLabel}-${actualIndex}`} data-testid={`row-query-${actualIndex}`}>
                           <TableCell className="font-medium">{queryLabel}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {queryResult.gpt.citation_found ? (
-                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
                               ) : (
-                                <XCircle className="w-4 h-4 text-red-600" />
+                                <XCircle className="w-4 h-4 text-red-600 shrink-0" />
                               )}
                               <span className="text-sm">
                                 {queryResult.gpt.citation_found 
@@ -655,12 +671,32 @@ export default function AIVisibility() {
                               </span>
                             </div>
                           </TableCell>
+                          <TableCell className="max-w-[280px]">
+                            {gptUrls.length > 0 ? (
+                              <div className="flex flex-col gap-1 text-xs">
+                                {gptUrls.map((u, i) => (
+                                  <a
+                                    key={i}
+                                    href={u.startsWith("http") ? u : `https://${u}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline truncate block"
+                                    title={u}
+                                  >
+                                    {u}
+                                  </a>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {queryResult.gemini.citation_found ? (
-                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
                               ) : (
-                                <XCircle className="w-4 h-4 text-red-600" />
+                                <XCircle className="w-4 h-4 text-red-600 shrink-0" />
                               )}
                               <span className="text-sm">
                                 {queryResult.gemini.citation_found 
@@ -668,6 +704,26 @@ export default function AIVisibility() {
                                   : "Not cited"}
                               </span>
                             </div>
+                          </TableCell>
+                          <TableCell className="max-w-[280px]">
+                            {geminiUrls.length > 0 ? (
+                              <div className="flex flex-col gap-1 text-xs">
+                                {geminiUrls.map((u, i) => (
+                                  <a
+                                    key={i}
+                                    href={u.startsWith("http") ? u : `https://${u}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline truncate block"
+                                    title={u}
+                                  >
+                                    {u}
+                                  </a>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

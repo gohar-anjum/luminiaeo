@@ -9,6 +9,8 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Topbar } from "@/components/Topbar";
+import { GlobalPhaseLoader } from "@/components/GlobalPhaseLoader";
+import { LoadingPhaseProvider } from "@/contexts/LoadingPhaseContext";
 import NotFound from "@/pages/NotFound";
 
 import Home from "@/pages/Home";
@@ -170,12 +172,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </AuthProvider>
+        <LoadingPhaseProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <GlobalPhaseLoader />
+              <Router />
+            </TooltipProvider>
+          </AuthProvider>
+        </LoadingPhaseProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

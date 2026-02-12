@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Link, useLocation } from "wouter";
 import { BarChart3, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
 import { apiClient } from "@/lib/api/client";
 
 export default function ResetPassword() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const { setPhase } = useLoadingPhase();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
@@ -58,6 +60,7 @@ export default function ResetPassword() {
     }
 
     setIsLoading(true);
+    setPhase("Resetting password…");
     try {
       await apiClient.resetPassword({
         email,
@@ -87,6 +90,7 @@ export default function ResetPassword() {
       });
     } finally {
       setIsLoading(false);
+      setPhase(null);
     }
   };
 

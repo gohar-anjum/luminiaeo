@@ -162,12 +162,6 @@ export function LocationSelector({
           )}
         </SelectContent>
       </Select>
-
-      {selectedLocation && !loading && (
-        <p className="text-xs text-muted-foreground">
-          Location Code: {selectedLocation.location_code}
-        </p>
-      )}
     </div>
   );
 }

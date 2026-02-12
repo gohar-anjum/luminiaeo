@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,20 +18,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
+import { PhaseLoader } from "@/components/PhaseLoader";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { formatNumber, formatCurrency } from "@/utils/formatters";
 import { Search, Download, Plus, FileText, ArrowUpDown, Loader2, Database } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
+import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
 import { registerMockData } from "@/lib/queryClient";
 import keywordsData from "@/data/keywords.json";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
 import { apiClient } from "@/lib/api/client";
-import type { KeywordResearchRequest, KeywordResearchStatus, KeywordResearchResults } from "@/lib/api/types";
+import type {
+  InformationalKeywordItem,
+  KeywordResearchRequest,
+  KeywordResearchStatus,
+  KeywordResearchResults,
+} from "@/lib/api/types";
 import { LocationSelector } from "@/components/LocationSelector";
 import { useLocation } from "wouter";
 
@@ -47,6 +52,7 @@ type Keyword = {
 
 export default function KeywordResearch() {
   const { toast } = useToast();
+  const { setPhase } = useLoadingPhase();
   const [, setLocation] = useLocation();
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,40 +60,54 @@ export default function KeywordResearch() {
   const [language, setLanguage] = useState("en");
   const [sortKey, setSortKey] = useState<keyof Keyword | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  
-  // Job Status State
-  const [isCreating, setIsCreating] = useState(false);
+
+  /** "informational" = Intent Check API; "all" = job-based keyword research */
+  const [intentOption, setIntentOption] = useState<"informational" | "all">("informational");
+
+  /** Last search results – only updated when user clicks Search and request completes. Dropdown change does not clear this. */
+  const [displayData, setDisplayData] = useState<Keyword[] | null>(null);
+
+  // Job-based flow state (only used when intentOption === "all" and user has run a search)
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const [jobStatus, setJobStatus] = useState<KeywordResearchStatus | null>(null);
   const [jobResults, setJobResults] = useState<KeywordResearchResults | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [isCreating, setIsCreating] = useState(false);
+
   // Selection State
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
 
-  // Register mock data for this endpoint (fallback)
+  // Register mock data for this endpoint (fallback when no search has been run)
   useEffect(() => {
     registerMockData("/api/keywords", async () => keywordsData);
   }, []);
 
-  // Use job results if available, otherwise use mock data
-  const keywordsFromResults = jobResults?.keywords?.map((kw) => ({
+  const { data: mockData, isLoading: isLoadingMock } = useQuery<Keyword[]>({
+    queryKey: ["/api/keywords"],
+    enabled: displayData === null,
+  });
+
+  const keywordsFromJob = jobResults?.keywords?.map((kw) => ({
     id: String(kw.keyword),
     keyword: kw.keyword,
     volume: kw.search_volume,
     cpc: kw.cpc,
-    competition: typeof kw.competition === 'string' ? kw.competition : (kw.competition > 0.7 ? 'High' : kw.competition > 0.4 ? 'Medium' : 'Low'),
-    intent: kw.intent || 'unknown',
+    competition:
+      typeof kw.competition === "string"
+        ? kw.competition
+        : (kw.competition ?? 0) > 0.7
+          ? "High"
+          : (kw.competition ?? 0) > 0.4
+            ? "Medium"
+            : "Low",
+    intent: kw.intent ?? "unknown",
     source: kw.source,
-  })) || [];
+  })) ?? [];
 
-  const { data: mockData, isLoading: isLoadingMock } = useQuery<Keyword[]>({
-    queryKey: ["/api/keywords"],
-    enabled: !jobResults, // Only fetch mock data if no job results
-  });
-
-  const data = jobResults ? keywordsFromResults : mockData;
-  const isLoading = jobResults ? false : isLoadingMock;
+  /** Data shown in table: last search results, or mock until first search. Changing dropdown does not change this. */
+  const data = displayData ?? mockData;
+  const isLoading = displayData === null && isLoadingMock;
 
   const handleSort = (key: keyof Keyword) => {
     if (sortKey === key) {
@@ -138,86 +158,170 @@ export default function KeywordResearch() {
     volume: kw.volume,
   }));
 
-  // Cleanup polling on unmount
+  // Poll job status for "All intents" flow
+  const pollJobStatus = useCallback(
+    async (jobId: number) => {
+      try {
+        const status = await apiClient.getKeywordResearchStatus(jobId);
+        setJobStatus(status);
+
+        if (status.status === "completed") {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          const results = await apiClient.getKeywordResearchResults(jobId);
+          setJobResults(results);
+          const mapped = (results.keywords ?? []).map((kw) => ({
+            id: String(kw.keyword),
+            keyword: kw.keyword,
+            volume: kw.search_volume,
+            cpc: kw.cpc,
+            competition:
+              typeof kw.competition === "string"
+                ? kw.competition
+                : (kw.competition ?? 0) > 0.7
+                  ? "High"
+                  : (kw.competition ?? 0) > 0.4
+                    ? "Medium"
+                    : "Low",
+            intent: kw.intent ?? "unknown",
+            source: kw.source,
+          }));
+          setDisplayData(mapped);
+          setIsCreating(false);
+          setPhase(null);
+          toast({
+            title: "Research Complete",
+            description: `Found ${results.keywords?.length ?? 0} keywords`,
+          });
+        } else if (status.status === "failed") {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setIsCreating(false);
+          setPhase(null);
+          toast({
+            title: "Research Failed",
+            description: "Keyword research job failed",
+            variant: "destructive",
+          });
+        }
+      } catch (error: any) {
+        console.error("Error polling job status:", error);
+      }
+    },
+    [toast, setPhase]
+  );
+
+  useEffect(() => {
+    if (intentOption !== "all" || !activeJobId) return;
+    pollJobStatus(activeJobId);
+    const id = setInterval(() => pollJobStatus(activeJobId), 5000);
+    pollingIntervalRef.current = id;
+    return () => {
+      clearInterval(id);
+      pollingIntervalRef.current = null;
+    };
+  }, [activeJobId, intentOption, pollJobStatus]);
+
   useEffect(() => {
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
     };
   }, []);
 
-  // Poll job status
-  const pollJobStatus = useCallback(async (jobId: number) => {
-    try {
-      const status = await apiClient.getKeywordResearchStatus(jobId);
-      setJobStatus(status);
-
-      if (status.status === "completed") {
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-        
-        // Fetch results
-        const results = await apiClient.getKeywordResearchResults(jobId);
-        setJobResults(results);
-        setIsCreating(false);
-        
-        toast({
-          title: "Research Complete",
-          description: `Found ${results.keywords?.length || 0} keywords`,
-        });
-      } else if (status.status === "failed") {
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-        setIsCreating(false);
-        toast({
-          title: "Research Failed",
-          description: "Keyword research job failed",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      console.error("Error polling job status:", error);
-    }
-  }, [toast]);
-
-  // Start polling when job is created
-  useEffect(() => {
-    if (activeJobId && !pollingIntervalRef.current) {
-      // Poll immediately, then every 5 seconds
-      pollJobStatus(activeJobId);
-      pollingIntervalRef.current = setInterval(() => {
-        pollJobStatus(activeJobId);
-      }, 5000);
-    }
-  }, [activeJobId, pollJobStatus]);
+  function mapInformationalToKeyword(kw: InformationalKeywordItem): Keyword {
+    const comp = kw.competition;
+    const competitionStr =
+      typeof comp === "string"
+        ? comp
+        : comp == null
+          ? "—"
+          : comp > 0.7
+            ? "High"
+            : comp > 0.4
+              ? "Medium"
+              : "Low";
+    return {
+      id: String(kw.keyword),
+      keyword: kw.keyword,
+      volume: kw.search_volume ?? 0,
+      cpc: kw.cpc ?? 0,
+      competition: competitionStr,
+      intent: kw.intent ?? kw.intent_category ?? "unknown",
+      source: kw.source,
+    };
+  }
 
   const handleSearch = async () => {
-    if (!query.trim()) {
+    const trimmed = query.trim();
+    if (!trimmed) {
       toast({
         title: "Error",
-        description: "Please enter a search query",
+        description: "Please enter a keyword or topic",
         variant: "destructive",
       });
       return;
     }
 
+    setSelectedKeywords(new Set());
+
+    if (intentOption === "informational") {
+      setIsCreating(true);
+      setPhase("Fetching informational keyword ideas…");
+      try {
+        const keywordsInput = trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+        const request =
+          keywordsInput.length === 1
+            ? {
+                keyword: keywordsInput[0],
+                location_code: locationCode,
+                language_code: language,
+                limit: 500,
+                top_n: 100,
+              }
+            : {
+                keywords: keywordsInput,
+                location_code: locationCode,
+                language_code: language,
+                limit: 500,
+                top_n: 100,
+              };
+
+        const response = await apiClient.getInformationalKeywordIdeas(request);
+        const mapped: Keyword[] = (response.keywords ?? []).map(mapInformationalToKeyword);
+        setDisplayData(mapped);
+
+        toast({
+          title: "Research Complete",
+          description: `Found ${response.total_count ?? mapped.length} informational keyword ideas`,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to fetch informational keyword ideas",
+          variant: "destructive",
+        });
+      } finally {
+        setIsCreating(false);
+        setPhase(null);
+      }
+      return;
+    }
+
+    // "All intents" – job-based keyword research
     setIsCreating(true);
+    setPhase("Initiating keyword research…");
     setJobResults(null);
     setJobStatus(null);
-    setSelectedKeywords(new Set()); // Reset selections when starting new search
-
     try {
       const request: KeywordResearchRequest = {
-        query: query.trim(),
+        query: trimmed,
         max_keywords: 100,
         geo_target_id: locationCode,
       };
-
       const job = await apiClient.createKeywordResearch(request);
       setActiveJobId(job.id);
       setJobStatus({
@@ -226,13 +330,14 @@ export default function KeywordResearch() {
         progress: 0,
         created_at: new Date().toISOString(),
       });
-
+      setPhase("Collecting keyword data…");
       toast({
         title: "Research Started",
-        description: "Keyword research job created. Polling for results...",
+        description: "Keyword research job created. Results will appear when ready.",
       });
     } catch (error: any) {
       setIsCreating(false);
+      setPhase(null);
       toast({
         title: "Error",
         description: error.message || "Failed to create keyword research job",
@@ -364,14 +469,8 @@ export default function KeywordResearch() {
 
   if (isLoading) {
     return (
-      <div className="p-8 space-y-6">
-        <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-10" />
-          ))}
-        </div>
-        <Skeleton className="h-96" />
+      <div className="p-8 flex items-center justify-center min-h-[60vh]">
+        <PhaseLoader phase="Collecting keyword data…" size="lg" />
       </div>
     );
   }
@@ -388,41 +487,58 @@ export default function KeywordResearch() {
       {/* Query Input */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Enter keyword or topic to research..."
-                className="pl-10"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !isCreating) {
-                    handleSearch();
-                  }
-                }}
-                disabled={isCreating}
-                data-testid="input-query"
-              />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Enter keyword or topic to research..."
+                  className="pl-10"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isCreating) {
+                      handleSearch();
+                    }
+                  }}
+                  disabled={isCreating}
+                  data-testid="input-query"
+                />
+              </div>
+              <div className="flex sm:w-[200px] w-full">
+                <Select
+                  value={intentOption}
+                  onValueChange={(v) => setIntentOption(v as "informational" | "all")}
+                  disabled={isCreating}
+                >
+                  <SelectTrigger aria-label="Keyword intent">
+                    <SelectValue placeholder="Intent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="informational">Informational</SelectItem>
+                    <SelectItem value="all">All intents</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                onClick={handleSearch} 
+                disabled={isCreating || !query.trim()}
+                data-testid="button-search"
+                className="sm:w-auto w-full"
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 mr-2" />
+                    Search
+                  </>
+                )}
+              </Button>
             </div>
-            <Button 
-              onClick={handleSearch} 
-              disabled={isCreating || !query.trim()}
-              data-testid="button-search"
-              className="sm:w-auto w-full"
-            >
-              {isCreating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4 mr-2" />
-                  Search
-                </>
-              )}
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -474,35 +590,23 @@ export default function KeywordResearch() {
         </div>
       )}
 
-      {/* Job Status Card - Only show when creating or processing */}
-      {(isCreating || (jobStatus && jobStatus.status === "processing")) && (
+      {/* Research Status – show circular loader while loading */}
+      {isCreating && (
         <Card>
           <CardHeader>
             <CardTitle>Research Status</CardTitle>
           </CardHeader>
-          <CardContent>
-            {jobStatus && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {jobStatus.status === "processing" && (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    )}
-                    <span className="font-medium">
-                      Status: {jobStatus.status.charAt(0).toUpperCase() + jobStatus.status.slice(1)}
-                    </span>
-                  </div>
-                  {jobStatus.progress !== undefined && (
-                    <span className="text-sm text-muted-foreground">
-                      {jobStatus.progress}%
-                    </span>
-                  )}
-                </div>
-                {jobStatus.progress !== undefined && (
-                  <Progress value={jobStatus.progress} className="h-2" />
-                )}
-              </div>
-            )}
+          <CardContent className="flex justify-center py-10">
+            <PhaseLoader
+              phase={
+                intentOption === "informational"
+                  ? "Fetching informational keyword ideas…"
+                  : jobStatus?.status === "processing" && jobStatus.progress != null
+                    ? `Collecting keyword data… ${jobStatus.progress}%`
+                    : "Collecting keyword data…"
+              }
+              size="lg"
+            />
           </CardContent>
         </Card>
       )}
@@ -598,10 +702,10 @@ export default function KeywordResearch() {
                 {paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {jobStatus?.status === "processing" ? (
+                      {isCreating ? (
                         <div className="flex flex-col items-center gap-2">
                           <Loader2 className="w-6 h-6 animate-spin" />
-                          <span>Research in progress...</span>
+                          <span>Fetching informational keyword ideas…</span>
                         </div>
                       ) : (
                         "No keywords found"

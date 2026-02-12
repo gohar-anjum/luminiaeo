@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { getApiUrl } from "@/lib/apiConfig";
+import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -15,6 +16,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { setPhase } = useLoadingPhase();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,7 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await apiRequest("POST", getApiUrl("/api/login"), { email, password });
+    setPhase("Signing in…");
+    try {
+      const res = await apiRequest("POST", getApiUrl("/api/login"), { email, password });
     const response = await res.json();
     
     if (response.response && response.response.user) {
@@ -142,10 +146,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(user);
       localStorage.setItem("auth", JSON.stringify({ user }));
     }
+    } finally {
+      setPhase(null);
+    }
   };
 
   const signup = async (name: string, email: string, password: string, passwordConfirmation: string) => {
-    const res = await apiRequest("POST", getApiUrl("/api/register"), { 
+    setPhase("Creating account…");
+    try {
+      const res = await apiRequest("POST", getApiUrl("/api/register"), { 
       name, 
       email, 
       password, 
@@ -171,6 +180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       setUser(user);
       localStorage.setItem("auth", JSON.stringify({ user, auth_token }));
+    }
+    } finally {
+      setPhase(null);
     }
   };
 

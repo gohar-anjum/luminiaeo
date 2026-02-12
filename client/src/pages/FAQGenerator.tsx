@@ -22,6 +22,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
 import { apiClient } from "@/lib/api/client";
 import type { FAQQuestion } from "@/lib/api/types";
 import { LocationSelector } from "@/components/LocationSelector";
@@ -29,6 +30,7 @@ import { useLocation } from "wouter";
 
 export default function FAQGenerator() {
   const { toast } = useToast();
+  const { setPhase } = useLoadingPhase();
   const [location] = useLocation();
   const [input, setInput] = useState("");
   const [locationCode, setLocationCode] = useState<number>(2840); // Default to US
@@ -97,36 +99,47 @@ export default function FAQGenerator() {
       pollIntervalRef.current = null;
     }
 
+    const MAX_404_RETRIES = 10; // Retry 404 (task not found yet) for ~20s
+    const MAX_NETWORK_RETRIES = 3; // Retry other transient errors a few times
+    let retry404Count = 0;
+    let retryNetworkCount = 0;
+
     const poll = async () => {
       try {
         const response = await apiClient.getFaqTaskStatus(taskId);
-        
+        retry404Count = 0;
+        retryNetworkCount = 0;
+
+        const status = (response.status ?? "").toLowerCase();
+
         // Update status and progress
         setTaskStatus(response.status);
         setProgress(response.progress || 0);
-        
+
         // Update questions - show them immediately when available
         if (response.questions && Array.isArray(response.questions)) {
           setQuestions(response.questions);
         }
 
-        // Check if completed or failed
-        if (response.status === "completed") {
+        // Check if completed or failed (case-insensitive)
+        if (status === "completed") {
           if (pollIntervalRef.current) {
             clearTimeout(pollIntervalRef.current);
             pollIntervalRef.current = null;
           }
           setLoading(false);
+          setPhase(null);
           toast({
             title: "Success",
-            description: `Generated ${response.total_questions || response.questions.length} FAQs successfully`,
+            description: `Generated ${response.total_questions ?? response.questions?.length ?? 0} FAQs successfully`,
           });
-        } else if (response.status === "failed") {
+        } else if (status === "failed") {
           if (pollIntervalRef.current) {
             clearTimeout(pollIntervalRef.current);
             pollIntervalRef.current = null;
           }
           setLoading(false);
+          setPhase(null);
           const errorMsg = response.error || "Task failed";
           setError(errorMsg);
           toast({
@@ -135,16 +148,39 @@ export default function FAQGenerator() {
             variant: "destructive",
           });
         } else {
-          // Continue polling for pending/processing
-          pollIntervalRef.current = setTimeout(poll, 2000); // Poll every 2 seconds
+          // Continue polling for pending/processing/queued
+          pollIntervalRef.current = setTimeout(poll, 2000);
         }
       } catch (err: any) {
+        const is404 = err?.status === 404 || err?.message?.toLowerCase().includes("task not found");
+        const isTransient =
+          err?.status === 502 ||
+          err?.status === 503 ||
+          err?.status === 504 ||
+          (err?.message && (
+            err.message.includes("network") ||
+            err.message.includes("fetch") ||
+            err.message.includes("timeout")
+          ));
+
+        if (is404 && retry404Count < MAX_404_RETRIES) {
+          retry404Count += 1;
+          pollIntervalRef.current = setTimeout(poll, 2000);
+          return;
+        }
+        if (isTransient && retryNetworkCount < MAX_NETWORK_RETRIES) {
+          retryNetworkCount += 1;
+          pollIntervalRef.current = setTimeout(poll, 3000);
+          return;
+        }
+
         if (pollIntervalRef.current) {
           clearTimeout(pollIntervalRef.current);
           pollIntervalRef.current = null;
         }
         setLoading(false);
-        const errorMsg = err.message || "Failed to get task status";
+        setPhase(null);
+        const errorMsg = err?.message || "Failed to get task status";
         setError(errorMsg);
         toast({
           title: "Error",
@@ -154,9 +190,8 @@ export default function FAQGenerator() {
       }
     };
 
-    // Start polling immediately
     poll();
-  }, [toast]);
+  }, [toast, setPhase]);
 
   const handleGenerate = async () => {
     if (!input.trim()) {
@@ -176,6 +211,7 @@ export default function FAQGenerator() {
     }
 
     setLoading(true);
+    setPhase("Initiating FAQ generation…");
     setError(null);
     setQuestions([]);
     setTaskStatus("idle");
@@ -209,11 +245,13 @@ export default function FAQGenerator() {
       });
 
       // Start polling for status
+      setPhase("Generating FAQs…");
       pollTaskStatus(newTaskId).catch((pollError: any) => {
         console.error("Polling error:", pollError);
       });
     } catch (err: any) {
       setLoading(false);
+      setPhase(null);
       let errorMessage = "Failed to create FAQ task";
       
       if (err instanceof Error) {

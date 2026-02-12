@@ -12,6 +12,8 @@ import type {
   KeywordResearchStatus,
   KeywordResearchResults,
   KeywordIdea,
+  InformationalIdeasRequest,
+  InformationalIdeasResponse,
   KeywordPlannerForSiteRequest,
   KeywordPlannerForSiteResponse,
   CombinedKeywordsRequest,
@@ -302,7 +304,31 @@ export class ApiClient {
     );
   }
 
-  // Keyword Planner Methods
+  // Keyword Planner Methods (Intent Check / Informational Ideas API)
+  async getInformationalKeywordIdeas(
+    request: InformationalIdeasRequest
+  ): Promise<InformationalIdeasResponse> {
+    const response = await fetch(getApiUrl("/api/keyword-planner/informational-ideas"), {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(request),
+      credentials: "include",
+    });
+
+    const data = await response.json();
+
+    if (data.status === 200 && data.response) {
+      return data.response as InformationalIdeasResponse;
+    }
+
+    throw new ApiError(
+      data.message || "Failed to get informational keyword ideas",
+      data.status ?? response.status,
+      data.response
+    );
+  }
+
+  /** @deprecated Use getInformationalKeywordIdeas for intent-check API */
   async getKeywordIdeas(keyword: string): Promise<KeywordIdea[]> {
     const response = await fetch(
       getApiUrl(`/api/keyword-planner/ideas?keyword=${encodeURIComponent(keyword)}`),

@@ -133,6 +133,46 @@ export interface KeywordIdea {
   competition: number;
 }
 
+/** Request for POST /api/keyword-planner/informational-ideas (Intent Check API) */
+export interface InformationalIdeasRequest {
+  /** Single seed keyword (use if not sending keywords) */
+  keyword?: string;
+  /** Seed keywords (use if not sending keyword). Exactly one of keyword or keywords is required. */
+  keywords?: string[];
+  /** DataForSEO location (e.g. 2840 = USA). Default 2840 */
+  location_code?: number;
+  /** 2-letter language code. Default "en" */
+  language_code?: string;
+  /** Max keyword ideas from DataForSEO (1–1000). Default 500 */
+  limit?: number;
+  /** Max returned after intent ranking (1–100). Default 100 */
+  top_n?: number;
+}
+
+/** One keyword item in the informational ideas response */
+export interface InformationalKeywordItem {
+  keyword: string;
+  source?: string;
+  search_volume?: number;
+  competition?: number;
+  cpc?: number;
+  intent?: string;
+  intent_category?: string;
+  intent_metadata?: unknown;
+  long_tail_versions?: unknown;
+  ai_visibility_score?: number;
+  semantic_data?: {
+    informational_score?: number;
+    [key: string]: unknown;
+  };
+}
+
+/** Response from POST /api/keyword-planner/informational-ideas */
+export interface InformationalIdeasResponse {
+  keywords: InformationalKeywordItem[];
+  total_count: number;
+}
+
 export interface KeywordPlannerForSiteRequest {
   target: string;
   location_code?: number;
