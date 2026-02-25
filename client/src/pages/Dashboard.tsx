@@ -14,6 +14,33 @@ import { Link } from "wouter";
 import { registerMockData } from "@/lib/queryClient";
 import dashboardData from "@/data/dashboard.json";
 import { useEffect } from "react";
+import {
+  getTransactions,
+  type CreditTransactionType,
+  type TransactionsResponse,
+} from "@/lib/api/billing";
+
+const FEATURE_LABELS: Record<string, string> = {
+  keyword_ideas: "Keyword Ideas",
+  faq_generator: "FAQ Generator",
+  citation_feature: "Citation / AI Visibility",
+  backlink_feature: "Backlinks / PBN",
+};
+
+function getFeatureLabel(featureKey: string): string {
+  return FEATURE_LABELS[featureKey] ?? featureKey;
+}
+
+function getTransactionTypeLabel(type: CreditTransactionType): string {
+  const labels: Record<CreditTransactionType, string> = {
+    purchase: "Purchase",
+    usage: "Usage",
+    refund: "Refund",
+    bonus: "Bonus",
+    adjustment: "Adjustment",
+  };
+  return labels[type] ?? type;
+}
 
 export default function Dashboard() {
   // Register mock data for this endpoint
@@ -30,6 +57,17 @@ export default function Dashboard() {
     retry: false,
   });
   const features = featuresData?.features ?? [];
+
+  const {
+    data: transactionsData,
+    isLoading: transactionsLoading,
+    error: transactionsError,
+  } = useQuery<TransactionsResponse>({
+    queryKey: ["/api/billing/transactions", { per_page: 10 }],
+    queryFn: () => getTransactions({ per_page: 10 }),
+    retry: false,
+  });
+  const transactions = transactionsData?.transactions ?? [];
 
   if (isLoading) {
     return (
@@ -233,36 +271,82 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Recent Activity */}
+        {/* Recent Activity — credit transactions from API */}
         <Card className="me-12" data-testid="card-recent-activity">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your latest credit purchases and usage.
+            </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {data?.recentActivity.map((activity: any) => (
-                <div
-                  key={activity.id}
-                  className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0"
-                  data-testid={`activity-${activity.id}`}
-                >
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-medium text-sm">{activity.type}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {activity.description}
+            {transactionsLoading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
+                    <Skeleton className="w-2 h-2 rounded-full mt-2 shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : transactionsError ? (
+              <p className="text-sm text-muted-foreground" data-testid="recent-activity-error">
+                Unable to load recent activity. You may need to sign in again.
+              </p>
+            ) : transactions.length === 0 ? (
+              <p className="text-sm text-muted-foreground" data-testid="recent-activity-empty">
+                No credit activity yet. Use a feature or buy credits to see activity here.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {transactions.map((tx) => (
+                  <div
+                    key={tx.id}
+                    className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0"
+                    data-testid={`activity-${tx.id}`}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+                        tx.amount >= 0 ? "bg-green-500" : "bg-amber-500"
+                      }`}
+                      aria-hidden
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-medium text-sm">
+                            {getTransactionTypeLabel(tx.type)}
+                            {tx.feature_key ? (
+                              <span className="text-muted-foreground font-normal">
+                                {" "}
+                                · {getFeatureLabel(tx.feature_key)}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                            <span className="tabular-nums font-medium">
+                              {tx.amount >= 0 ? "+" : ""}
+                              {tx.amount} credits
+                            </span>
+                            {tx.balance_after != null && (
+                              <span className="text-xs">
+                                Balance after: {tx.balance_after.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatRelativeTime(activity.timestamp)}
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formatRelativeTime(tx.created_at)}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

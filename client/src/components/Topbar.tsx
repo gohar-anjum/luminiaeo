@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useEffect } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
@@ -18,12 +19,17 @@ import { Link } from "wouter";
 export function Topbar() {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
-  const [, setLocation] = useLocation();
-  const { data: balanceData } = useQuery<{ credits_balance: number }>({
+  const [location, setLocation] = useLocation();
+  const { data: balanceData, refetch: refetchBalance } = useQuery<{ credits_balance: number }>({
     queryKey: ["/api/billing/balance"],
     retry: false,
   });
   const creditsBalance = balanceData?.credits_balance;
+
+  // Refetch credit balance on every page navigation so the navbar stays up to date
+  useEffect(() => {
+    refetchBalance();
+  }, [location, refetchBalance]);
 
   const handleLogout = () => {
     logout();

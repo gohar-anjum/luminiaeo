@@ -27,6 +27,7 @@ const ENDPOINT_PHASES: Record<string, string> = {
   "/api/citations/results": "Loading citation results…",
   "/api/location-codes": "Loading locations…",
   "/api/location-codes/countries": "Loading countries…",
+  "/api/billing/transactions": "Loading recent activity…",
 };
 
 /** Default phase when no mapping exists */
