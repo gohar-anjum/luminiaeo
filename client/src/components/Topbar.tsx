@@ -1,4 +1,4 @@
-import { Moon, Sun, User } from "lucide-react";
+import { Moon, Sun, User, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,11 +12,18 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 
 export function Topbar() {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
+  const { data: balanceData } = useQuery<{ credits_balance: number }>({
+    queryKey: ["/api/billing/balance"],
+    retry: false,
+  });
+  const creditsBalance = balanceData?.credits_balance;
 
   const handleLogout = () => {
     logout();
@@ -27,6 +34,19 @@ export function Topbar() {
     <header className="flex items-center justify-end h-14 px-4 border-b bg-background sticky top-0 z-50">
       <div className="flex items-center gap-2">
         <SidebarTrigger data-testid="button-sidebar-toggle" />
+        {creditsBalance != null && (
+          <Link href="/billing">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+              data-testid="header-credits-balance"
+            >
+              <Coins className="w-4 h-4" />
+              <span>{creditsBalance.toLocaleString()} credits</span>
+            </Button>
+          </Link>
+        )}
         <Button
           variant="ghost"
           size="icon"

@@ -1,11 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { formatRelativeTime } from "@/utils/formatters";
-// import { formatNumber } from "@/utils/formatters";
-// import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer } from "recharts";
-// import { TrendingUp, BarChart3, Eye, Tag } from "lucide-react";
-// import { Link } from "wouter";
+import { Link } from "wouter";
 import { registerMockData } from "@/lib/queryClient";
 import dashboardData from "@/data/dashboard.json";
 import { useEffect } from "react";
@@ -19,6 +24,12 @@ export default function Dashboard() {
   const { data, isLoading } = useQuery<typeof dashboardData>({
     queryKey: ["/api/dashboard"],
   });
+
+  const { data: featuresData } = useQuery<{ features: { id: string; key: string; name: string; credit_cost: number }[] }>({
+    queryKey: ["/api/billing/features"],
+    retry: false,
+  });
+  const features = featuresData?.features ?? [];
 
   if (isLoading) {
     return (
@@ -184,6 +195,44 @@ export default function Dashboard() {
       </div> */}
 
       <div className="grid grid-cols-1 gap-6">
+        {features.length > 0 && (
+          <Card className="me-12" data-testid="card-credit-consumption">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle>Credit consumption</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Credits charged per use for each feature.
+                </p>
+              </div>
+              <Link href="/billing">
+                <span className="text-sm text-primary hover:underline cursor-pointer">
+                  Buy credits →
+                </span>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Feature</TableHead>
+                    <TableHead className="text-right w-28">Credits per use</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {features.map((f) => (
+                    <TableRow key={f.id}>
+                      <TableCell className="font-medium">{f.name}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {f.credit_cost}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Recent Activity */}
         <Card className="me-12" data-testid="card-recent-activity">
           <CardHeader>

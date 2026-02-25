@@ -30,6 +30,8 @@ import PBNDetector from "@/pages/PBNDetector";
 import MetaOptimizer from "@/pages/MetaOptimizer";
 import Projects from "@/pages/Projects";
 import Billing from "@/pages/Billing";
+import BillingSuccess from "@/pages/BillingSuccess";
+import BillingCancel from "@/pages/BillingCancel";
 import Settings from "@/pages/Settings";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -146,6 +148,20 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/billing/success">
+        <ProtectedRoute>
+          <AuthenticatedLayout>
+            <BillingSuccess />
+          </AuthenticatedLayout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/billing/cancel">
+        <ProtectedRoute>
+          <AuthenticatedLayout>
+            <BillingCancel />
+          </AuthenticatedLayout>
+        </ProtectedRoute>
+      </Route>
       <Route path="/billing">
         <ProtectedRoute>
           <AuthenticatedLayout>

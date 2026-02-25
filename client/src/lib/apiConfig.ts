@@ -5,6 +5,7 @@ export const REAL_API_ENDPOINTS = [
   "/api/register",
   "/api/logout",
   "/api/user",
+  "/api/billing",
   "/api/pbn",
   "/api/faq",
   "/api/keyword-research",
