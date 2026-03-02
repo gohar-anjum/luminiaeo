@@ -18,15 +18,20 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recha
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
+import { apiClient, ApiError, handleApiError, validateUrl, normalizeUrl } from "@/lib/api";
 
 export default function SemanticScore() {
   const { toast } = useToast();
   const [url, setUrl] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   const handleAnalyze = async () => {
-    if (!url) {
+    const trimmed = url.trim();
+
+    if (!trimmed) {
+      setUrlError("Please enter a URL to analyze");
       toast({
         title: "Error",
         description: "Please enter a URL to analyze",
@@ -35,29 +40,77 @@ export default function SemanticScore() {
       return;
     }
 
+    if (trimmed.length > 2048) {
+      const message = "URL must be 2048 characters or less";
+      setUrlError(message);
+      toast({
+        title: "Invalid URL",
+        description: message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateUrl(trimmed)) {
+      const message = "Please enter a valid URL";
+      setUrlError(message);
+      toast({
+        title: "Invalid URL",
+        description: message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setUrlError(null);
+    setResults(null);
 
-    setResults({
-      url,
-      score: 78,
-      metaTitle: "Best Practices for AI Search Optimization | LUMINI AEO",
-      metaDescription: "Learn proven strategies to optimize your content for AI search engines like ChatGPT, Gemini, and Perplexity.",
-      entities: ["AI Search", "ChatGPT", "Gemini", "Perplexity", "SEO", "Content Optimization"],
-      topics: [
-        { name: "AI Optimization", coverage: 85 },
-        { name: "Search Engines", coverage: 72 },
-        { name: "Content Strategy", coverage: 68 },
-        { name: "Technical SEO", coverage: 45 },
-      ],
-      missingTopics: [
-        { name: "Entity-based SEO", suggestion: "Add section about entity relationships and knowledge graphs" },
-        { name: "Structured Data", suggestion: "Include schema markup examples and implementation guide" },
-        { name: "Citation Strategies", suggestion: "Discuss how to become a citeable source for AI models" },
-      ],
-    });
+    try {
+      const normalizedUrl = normalizeUrl(trimmed);
+      const response = await apiClient.getSemanticScore({ url: normalizedUrl });
 
-    setIsAnalyzing(false);
+      setResults({
+        url: normalizedUrl,
+        semanticScore: response.semantic_score,
+      });
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        if (error.status === 402) {
+          toast({
+            title: "Not enough credits",
+            description: "You don't have enough credits to run this analysis. Visit the Billing page to purchase more credits.",
+            variant: "destructive",
+          });
+        } else if (error.status === 422) {
+          const message =
+            error.message ||
+            "Please enter a valid URL";
+          setUrlError(message);
+          toast({
+            title: "Validation error",
+            description: message,
+            variant: "destructive",
+          });
+        } else {
+          const { message } = handleApiError(error);
+          toast({
+            title: "Error",
+            description: message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        const { message } = handleApiError(error);
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleExport = () => {
@@ -84,6 +137,26 @@ export default function SemanticScore() {
     totalItems: totalMissingTopics,
   } = usePagination(results?.missingTopics || [], { itemsPerPage: 10 });
 
+  const semanticScore: number | null = results?.semanticScore ?? null;
+  const semanticScorePercentage = semanticScore != null ? Math.round(semanticScore * 100) : null;
+  const focusLabel =
+    semanticScore == null
+      ? null
+      : semanticScore < 0.3
+        ? "Low focus"
+        : semanticScore < 0.6
+          ? "Moderate focus"
+          : "High focus";
+
+  const focusExplanation =
+    semanticScore == null
+      ? null
+      : semanticScore < 0.3
+        ? "This page is not tightly focused on a single primary topic."
+        : semanticScore < 0.6
+          ? "This page covers its topic somewhat consistently."
+          : "This page is strongly aligned with its main topic; good semantic focus.";
+
   return (
     <div className="p-8 space-y-6">
       <div>
@@ -103,7 +176,10 @@ export default function SemanticScore() {
                   id="url"
                   placeholder="https://example.com/your-page"
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    if (urlError) setUrlError(null);
+                  }}
                   data-testid="input-url"
                 />
                 <Button
@@ -115,6 +191,11 @@ export default function SemanticScore() {
                   {isAnalyzing ? "Analyzing..." : "Analyze"}
                 </Button>
               </div>
+              {urlError && (
+                <p className="text-xs text-destructive mt-1">
+                  {urlError}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -158,20 +239,37 @@ export default function SemanticScore() {
                         fill="none"
                         stroke="hsl(var(--primary))"
                         strokeWidth="3"
-                        strokeDasharray={`${results.score}, 100`}
+                        strokeDasharray={`${semanticScorePercentage ?? 0}, 100`}
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="text-4xl font-bold" data-testid="text-score">{results.score}</div>
-                      <div className="text-xs text-muted-foreground">out of 100</div>
+                      <div className="text-4xl font-bold" data-testid="text-score">
+                        {semanticScore != null ? semanticScore.toFixed(2) : "--"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">scale 0–1</div>
                     </div>
                   </div>
                 </div>
                 <div className="mt-4 space-y-2">
                   <div className="text-sm font-medium">Overall Assessment</div>
-                  <Badge variant={results.score >= 70 ? "default" : "secondary"}>
-                    {results.score >= 80 ? "Excellent" : results.score >= 70 ? "Good" : "Needs Improvement"}
-                  </Badge>
+                  {focusLabel && (
+                    <Badge
+                      variant={
+                        semanticScore != null && semanticScore >= 0.6
+                          ? "default"
+                          : semanticScore != null && semanticScore >= 0.3
+                            ? "secondary"
+                            : "outline"
+                      }
+                    >
+                      {focusLabel}
+                    </Badge>
+                  )}
+                  {semanticScore != null && (
+                    <p className="text-xs text-muted-foreground">
+                      {semanticScore.toFixed(2)} semantic score (cosine similarity between page and primary topic).
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -182,22 +280,11 @@ export default function SemanticScore() {
                 <CardTitle>Meta Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <div className="text-sm font-medium mb-1">Meta Title</div>
-                  <div className="text-sm text-muted-foreground">{results.metaTitle}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium mb-1">Meta Description</div>
-                  <div className="text-sm text-muted-foreground">{results.metaDescription}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium mb-2">Key Entities</div>
-                  <div className="flex flex-wrap gap-2">
-                    {results.entities.map((entity: string, index: number) => (
-                      <Badge key={index} variant="outline">{entity}</Badge>
-                    ))}
-                  </div>
-                </div>
+                {focusExplanation && (
+                  <p className="text-sm text-muted-foreground">
+                    {focusExplanation}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -209,27 +296,33 @@ export default function SemanticScore() {
                 <CardTitle>Topic Coverage</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={chartData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        label
-                      >
-                        {chartData.map((_: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                {chartData.length > 0 ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          label
+                        >
+                          {chartData.map((_: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Topic coverage breakdown will appear here when available.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -239,35 +332,43 @@ export default function SemanticScore() {
                 <CardTitle>Missing Topics</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Topic</TableHead>
-                      <TableHead>Suggestion</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedMissingTopics.map((topic: any, index: number) => {
-                      const actualIndex = (currentPage - 1) * itemsPerPage + index;
-                      return (
-                      <TableRow key={`${topic.name}-${actualIndex}`} data-testid={`row-topic-${actualIndex}`}>
-                        <TableCell className="font-medium">{topic.name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {topic.suggestion}
-                        </TableCell>
-                      </TableRow>
-                    );
-                    })}
-                  </TableBody>
-                </Table>
-                <DataTablePagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  itemsPerPage={itemsPerPage}
-                  totalItems={totalMissingTopics}
-                  onPageChange={goToPage}
-                  onItemsPerPageChange={setItemsPerPage}
-                />
+                {paginatedMissingTopics.length > 0 ? (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Topic</TableHead>
+                          <TableHead>Suggestion</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedMissingTopics.map((topic: any, index: number) => {
+                          const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                          return (
+                            <TableRow key={`${topic.name}-${actualIndex}`} data-testid={`row-topic-${actualIndex}`}>
+                              <TableCell className="font-medium">{topic.name}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {topic.suggestion}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      itemsPerPage={itemsPerPage}
+                      totalItems={totalMissingTopics}
+                      onPageChange={goToPage}
+                      onItemsPerPageChange={setItemsPerPage}
+                    />
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Suggested missing topics will appear here when detailed analysis is available.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

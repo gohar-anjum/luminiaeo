@@ -624,6 +624,74 @@ export class ApiClient {
   async getLocationCode(locationCode: number): Promise<LocationCodeResponse> {
     return this.get<LocationCodeResponse>(`/api/location-codes/${locationCode}`);
   }
+
+  // Page Analysis Methods
+  async optimizeMetaTags(request: { url: string }): Promise<{
+    title: string;
+    description: string;
+    from_cache: boolean;
+    analyzed_at?: string;
+  }> {
+    return this.post<{
+      title: string;
+      description: string;
+      from_cache: boolean;
+      analyzed_at?: string;
+    }>("/page-analysis/meta-optimize", request);
+  }
+
+  async getMetaOptimizeHistory(): Promise<{
+    analyses: Array<{
+      url: string;
+      intent?: string | null;
+      word_count?: number | null;
+      analyzed_at: string;
+      [key: string]: any;
+    }>;
+  }> {
+    return this.get<{
+      analyses: Array<{
+        url: string;
+        intent?: string | null;
+        word_count?: number | null;
+        analyzed_at: string;
+        [key: string]: any;
+      }>;
+    }>("/page-analysis/meta-optimize/history");
+  }
+
+  async getSemanticScore(request: { url: string }): Promise<{
+    semantic_score: number;
+  }> {
+    return this.post<{ semantic_score: number }>(
+      "/page-analysis/semantic-score",
+      request
+    );
+  }
+
+  async getSemanticScoreHistory(): Promise<{
+    analyses: Array<{
+      id: number;
+      source_url: string;
+      comparison_type?: string;
+      comparison_value: string;
+      semantic_score: number;
+      analyzed_at: string;
+      [key: string]: any;
+    }>;
+  }> {
+    return this.get<{
+      analyses: Array<{
+        id: number;
+        source_url: string;
+        comparison_type?: string;
+        comparison_value: string;
+        semantic_score: number;
+        analyzed_at: string;
+        [key: string]: any;
+      }>;
+    }>("/page-analysis/semantic-score/history");
+  }
 }
 
 // Export singleton instance

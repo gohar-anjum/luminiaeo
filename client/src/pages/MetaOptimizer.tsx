@@ -7,15 +7,36 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Copy, Download, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiClient, ApiError, handleApiError, validateUrl, normalizeUrl } from "@/lib/api";
+
+function formatRelativeTime(isoDate?: string | null): string | null {
+  if (!isoDate) return null;
+  const analyzedTime = new Date(isoDate).getTime();
+  if (Number.isNaN(analyzedTime)) return null;
+  const now = Date.now();
+  const diffMs = now - analyzedTime;
+  const diffSeconds = Math.round(diffMs / 1000);
+  if (diffSeconds < 60) return "just now";
+  const diffMinutes = Math.round(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  const diffDays = Math.round(diffHours / 24);
+  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+}
 
 export default function MetaOptimizer() {
   const { toast } = useToast();
   const [url, setUrl] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   const handleScan = async () => {
-    if (!url) {
+    const trimmed = url.trim();
+
+    if (!trimmed) {
+      setUrlError("Please enter a URL to scan");
       toast({
         title: "Error",
         description: "Please enter a URL to scan",
@@ -24,24 +45,83 @@ export default function MetaOptimizer() {
       return;
     }
 
+    if (trimmed.length > 2048) {
+      const message = "URL must be 2048 characters or less";
+      setUrlError(message);
+      toast({
+        title: "Invalid URL",
+        description: message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateUrl(trimmed)) {
+      const message = "Please enter a valid URL";
+      setUrlError(message);
+      toast({
+        title: "Invalid URL",
+        description: message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsScanning(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setUrlError(null);
 
-    setResults({
-      url,
-      current: {
-        title: "Best Practices for AI Search Optimization",
-        titleStatus: "ok",
-        description: "Learn proven strategies to optimize your content for AI search engines.",
-        descriptionStatus: "long",
-      },
-      suggested: {
-        title: "Complete Guide to AI Search Optimization | LUMINI AEO",
-        description: "Discover proven strategies to optimize your content for ChatGPT, Gemini, and Perplexity. Improve AI visibility today.",
-      },
-    });
+    try {
+      const normalizedUrl = normalizeUrl(trimmed);
+      const response = await apiClient.optimizeMetaTags({ url: normalizedUrl });
 
-    setIsScanning(false);
+      setResults({
+        url: normalizedUrl,
+        suggested: {
+          title: response.title,
+          description: response.description,
+        },
+        primary_keyword: (response as any).primary_keyword ?? null,
+        intent: (response as any).intent ?? null,
+        from_cache: response.from_cache,
+        analyzed_at: response.analyzed_at ?? null,
+      });
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        if (error.status === 402) {
+          toast({
+            title: "Not enough credits",
+            description: "You don't have enough credits to run this analysis. Visit the Billing page to purchase more credits.",
+            variant: "destructive",
+          });
+        } else if (error.status === 422) {
+          const message =
+            error.message ||
+            "Please enter a valid URL";
+          setUrlError(message);
+          toast({
+            title: "Validation error",
+            description: message,
+            variant: "destructive",
+          });
+        } else {
+          const { message } = handleApiError(error);
+          toast({
+            title: "Error",
+            description: message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        const { message } = handleApiError(error);
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const handleCopy = (text: string) => {
@@ -104,7 +184,10 @@ export default function MetaOptimizer() {
                   id="url"
                   placeholder="https://example.com/your-page"
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    if (urlError) setUrlError(null);
+                  }}
                   data-testid="input-url"
                 />
                 <Button
@@ -116,6 +199,11 @@ export default function MetaOptimizer() {
                   {isScanning ? "Scanning..." : "Scan"}
                 </Button>
               </div>
+              {urlError && (
+                <p className="text-xs text-destructive mt-1">
+                  {urlError}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -123,6 +211,44 @@ export default function MetaOptimizer() {
 
       {results && (
         <>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              {results.primary_keyword && (
+                <Badge variant="outline" className="text-xs">
+                  Primary keyword: {results.primary_keyword}
+                </Badge>
+              )}
+              {results.intent && (
+                <Badge variant="secondary" className="text-xs capitalize">
+                  {results.intent === "commercial"
+                    ? "Commercial intent"
+                    : results.intent === "informational"
+                      ? "Informational intent"
+                      : results.intent === "comparative"
+                        ? "Comparative intent"
+                        : results.intent}
+                </Badge>
+              )}
+              {results.from_cache && (
+                <Badge variant="outline" className="text-xs">
+                  Using last 24h result
+                </Badge>
+              )}
+            </div>
+            {results.analyzed_at && (
+              <p className="text-[11px] text-muted-foreground">
+                {results.from_cache
+                  ? (() => {
+                      const rel = formatRelativeTime(results.analyzed_at);
+                      return rel
+                        ? `Using analysis from ${rel} (no additional credits used).`
+                        : "Using cached analysis (no additional credits used).";
+                    })()
+                  : "New analysis just run."}
+              </p>
+            )}
+          </div>
+
           <div className="flex justify-end">
             <Button onClick={handleDownload} variant="outline" data-testid="button-download">
               <Download className="w-4 h-4 mr-2" />
@@ -137,37 +263,45 @@ export default function MetaOptimizer() {
                 <CardTitle>Current Meta Tags</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">Meta Title</div>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(results.current.titleStatus)}
-                      {getStatusBadge(results.current.titleStatus)}
+                {results.current ? (
+                  <>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium">Meta Title</div>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(results.current.titleStatus)}
+                          {getStatusBadge(results.current.titleStatus)}
+                        </div>
+                      </div>
+                      <div className="p-3 bg-muted rounded-md">
+                        <div className="text-sm">{results.current.title}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {results.current.title.length} / 60 characters
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-3 bg-muted rounded-md">
-                    <div className="text-sm">{results.current.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {results.current.title.length} characters
-                    </div>
-                  </div>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">Meta Description</div>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(results.current.descriptionStatus)}
-                      {getStatusBadge(results.current.descriptionStatus)}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium">Meta Description</div>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(results.current.descriptionStatus)}
+                          {getStatusBadge(results.current.descriptionStatus)}
+                        </div>
+                      </div>
+                      <div className="p-3 bg-muted rounded-md">
+                        <div className="text-sm">{results.current.description}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {results.current.description.length} / 160 characters
+                        </div>
+                      </div>
                     </div>
+                  </>
+                ) : (
+                  <div className="text-xs text-muted-foreground">
+                    Current meta tags will appear here when available.
                   </div>
-                  <div className="p-3 bg-muted rounded-md">
-                    <div className="text-sm">{results.current.description}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {results.current.description.length} characters
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -202,7 +336,7 @@ export default function MetaOptimizer() {
                     data-testid="textarea-title"
                   />
                   <div className="text-xs text-muted-foreground">
-                    {results.suggested.title.length} characters
+                    {results.suggested.title.length} / 60 characters
                   </div>
                 </div>
 
@@ -231,7 +365,7 @@ export default function MetaOptimizer() {
                     data-testid="textarea-description"
                   />
                   <div className="text-xs text-muted-foreground">
-                    {results.suggested.description.length} characters
+                    {results.suggested.description.length} / 160 characters
                   </div>
                 </div>
               </CardContent>
