@@ -38,5 +38,16 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    // Proxy API requests to backend in dev to avoid CORS
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+      "/page-analysis": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+    },
   },
 });

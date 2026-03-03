@@ -637,7 +637,7 @@ export class ApiClient {
       description: string;
       from_cache: boolean;
       analyzed_at?: string;
-    }>("/page-analysis/meta-optimize", request);
+    }>("/api/page-analysis/meta-optimize", request);
   }
 
   async getMetaOptimizeHistory(): Promise<{
@@ -657,14 +657,14 @@ export class ApiClient {
         analyzed_at: string;
         [key: string]: any;
       }>;
-    }>("/page-analysis/meta-optimize/history");
+    }>("/api/page-analysis/meta-optimize/history");
   }
 
   async getSemanticScore(request: { url: string }): Promise<{
     semantic_score: number;
   }> {
     return this.post<{ semantic_score: number }>(
-      "/page-analysis/semantic-score",
+      "/api/page-analysis/semantic-score",
       request
     );
   }
@@ -690,7 +690,7 @@ export class ApiClient {
         analyzed_at: string;
         [key: string]: any;
       }>;
-    }>("/page-analysis/semantic-score/history");
+    }>("/api/page-analysis/semantic-score/history");
   }
 }
 

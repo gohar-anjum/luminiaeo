@@ -1,4 +1,9 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+// In dev, use empty base so requests go to same origin and Vite proxy avoids CORS
+const rawBase = import.meta.env.VITE_API_BASE_URL || "";
+export const API_BASE_URL =
+  import.meta.env.DEV && rawBase.startsWith("http://127.0.0.1")
+    ? ""
+    : rawBase;
 
 export const REAL_API_ENDPOINTS = [
   "/api/login",
