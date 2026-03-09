@@ -505,6 +505,127 @@ export interface CitationRetryResponse {
   missing_count: number;
 }
 
+// Page Analysis — Meta Tag Optimizer
+export interface MetaOptimizeRequest {
+  url: string;
+  keyword?: string;
+}
+
+export interface MetaOptimizeResponse {
+  title: string;
+  description: string;
+  suggestions: string[];
+  from_cache: boolean;
+  analyzed_at: string;
+  primary_keyword: string;
+  intent: string;
+  original_title: string;
+  original_description: string;
+}
+
+export interface MetaOptimizeHistoryItem {
+  url: string;
+  keyword: string | null;
+  title: string;
+  description: string;
+  original_title: string;
+  original_description: string;
+  suggestions: string[];
+  intent: string | null;
+  primary_keyword: string | null;
+  from_cache: boolean;
+  analyzed_at: string;
+}
+
+// Page Analysis — Semantic Score Checker
+export interface SemanticScoreRequest {
+  url: string;
+  keyword?: string;
+}
+
+export interface KeywordScore {
+  phrase: string;
+  extraction_score: number;
+  semantic_score: number;
+}
+
+export interface SemanticScoreResponse {
+  semantic_score: number;
+  primary_keyword: string;
+  keyword_scores: KeywordScore[];
+  from_cache: boolean;
+  analyzed_at: string;
+}
+
+export interface SemanticScoreHistoryItem {
+  url: string;
+  keyword: string | null;
+  semantic_score: number;
+  primary_keyword: string | null;
+  keyword_scores: KeywordScore[];
+  from_cache: boolean;
+  analyzed_at: string;
+}
+
+// Page Analysis — Semantic Content Generator
+export type ContentTone = "professional" | "casual" | "academic" | "persuasive" | "informative";
+
+export interface ContentOutlineRequest {
+  keyword: string;
+  tone?: ContentTone;
+}
+
+export interface OutlineSubsection {
+  heading: string;
+  type: "h3";
+  keywords: string[];
+  brief: string;
+}
+
+export interface OutlineSection {
+  heading: string;
+  type: "h2";
+  keywords: string[];
+  brief: string;
+  subsections: OutlineSubsection[];
+}
+
+export interface ContentOutline {
+  title: string;
+  estimated_word_count: number;
+  sections: OutlineSection[];
+  faq_suggestions: string[];
+}
+
+export interface ContentOutlineResponse {
+  outline: ContentOutline;
+  semantic_keywords: string[];
+  intent: string;
+  keyword: string;
+  tone: ContentTone;
+  from_cache: boolean;
+  generated_at: string;
+}
+
+export interface ContentOutlineHistoryItem {
+  keyword: string;
+  tone: ContentTone;
+  intent: string | null;
+  outline: ContentOutline;
+  semantic_keywords: string[];
+  from_cache: boolean;
+  generated_at: string;
+}
+
+// Shared paginated history response
+export interface PaginatedResponse<T> {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  data: T[];
+}
+
 // Location Codes Types
 export interface LocationCode {
   id: number;

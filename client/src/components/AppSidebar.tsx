@@ -42,10 +42,11 @@ const menuGroups = [
     ],
   },
   {
-    label: "Content Intelligence",
+    label: "Page Analysis",
     items: [
+      { title: "Meta Tag Optimizer", url: "/meta", icon: Tag },
       { title: "Semantic Score Checker", url: "/semantic", icon: CheckCircle2 },
-      { title: "Semantic Content Generator", url: "/content-generator", icon: FileText },
+      { title: "Content Generator", url: "/content-generator", icon: FileText },
     ],
   },
   {
@@ -57,7 +58,6 @@ const menuGroups = [
     items: [
       { title: "Keyword Clustering", url: "/clustering", icon: Network },
       { title: "PBN Detector", url: "/pbn", icon: Shield },
-      { title: "Meta Tag Optimizer", url: "/meta", icon: Tag },
     ],
   },
   {

@@ -48,6 +48,16 @@ import type {
   LocationCodeResponse,
   ProfileUpdateRequest,
   ProfileUpdateResponse,
+  MetaOptimizeRequest,
+  MetaOptimizeResponse,
+  MetaOptimizeHistoryItem,
+  SemanticScoreRequest,
+  SemanticScoreResponse,
+  SemanticScoreHistoryItem,
+  ContentOutlineRequest,
+  ContentOutlineResponse,
+  ContentOutlineHistoryItem,
+  PaginatedResponse,
 } from "./types";
 
 export class ApiError extends Error {
@@ -626,71 +636,62 @@ export class ApiClient {
   }
 
   // Page Analysis Methods
-  async optimizeMetaTags(request: { url: string }): Promise<{
-    title: string;
-    description: string;
-    from_cache: boolean;
-    analyzed_at?: string;
-  }> {
-    return this.post<{
-      title: string;
-      description: string;
-      from_cache: boolean;
-      analyzed_at?: string;
-    }>("/api/page-analysis/meta-optimize", request);
+
+  private async postWithIdempotency<T>(endpoint: string, body?: any): Promise<T> {
+    const idempotencyKey = crypto.randomUUID();
+    return this.request<T>(endpoint, {
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
+      headers: { "X-Idempotency-Key": idempotencyKey },
+    });
   }
 
-  async getMetaOptimizeHistory(): Promise<{
-    analyses: Array<{
-      url: string;
-      intent?: string | null;
-      word_count?: number | null;
-      analyzed_at: string;
-      [key: string]: any;
-    }>;
-  }> {
-    return this.get<{
-      analyses: Array<{
-        url: string;
-        intent?: string | null;
-        word_count?: number | null;
-        analyzed_at: string;
-        [key: string]: any;
-      }>;
-    }>("/api/page-analysis/meta-optimize/history");
+  async optimizeMetaTags(request: MetaOptimizeRequest): Promise<MetaOptimizeResponse> {
+    return this.postWithIdempotency<MetaOptimizeResponse>(
+      "/api/page-analysis/meta-optimize",
+      request
+    );
   }
 
-  async getSemanticScore(request: { url: string }): Promise<{
-    semantic_score: number;
-  }> {
-    return this.post<{ semantic_score: number }>(
+  async getMetaOptimizeHistory(
+    page = 1,
+    perPage = 20
+  ): Promise<PaginatedResponse<MetaOptimizeHistoryItem>> {
+    return this.get<PaginatedResponse<MetaOptimizeHistoryItem>>(
+      `/api/page-analysis/meta-optimize/history?page=${page}&per_page=${perPage}`
+    );
+  }
+
+  async getSemanticScore(request: SemanticScoreRequest): Promise<SemanticScoreResponse> {
+    return this.postWithIdempotency<SemanticScoreResponse>(
       "/api/page-analysis/semantic-score",
       request
     );
   }
 
-  async getSemanticScoreHistory(): Promise<{
-    analyses: Array<{
-      id: number;
-      source_url: string;
-      comparison_type?: string;
-      comparison_value: string;
-      semantic_score: number;
-      analyzed_at: string;
-      [key: string]: any;
-    }>;
-  }> {
-    return this.get<{
-      analyses: Array<{
-        id: number;
-        source_url: string;
-        comparison_type?: string;
-        comparison_value: string;
-        semantic_score: number;
-        analyzed_at: string;
-        [key: string]: any;
-      }>;
-    }>("/api/page-analysis/semantic-score/history");
+  async getSemanticScoreHistory(
+    page = 1,
+    perPage = 20
+  ): Promise<PaginatedResponse<SemanticScoreHistoryItem>> {
+    return this.get<PaginatedResponse<SemanticScoreHistoryItem>>(
+      `/api/page-analysis/semantic-score/history?page=${page}&per_page=${perPage}`
+    );
+  }
+
+  async generateContentOutline(request: ContentOutlineRequest): Promise<ContentOutlineResponse> {
+    return this.postWithIdempotency<ContentOutlineResponse>(
+      "/api/page-analysis/content-outline",
+      request
+    );
+  }
+
+  async getContentOutlineHistory(
+    page = 1,
+    perPage = 20
+  ): Promise<PaginatedResponse<ContentOutlineHistoryItem>> {
+    return this.get<PaginatedResponse<ContentOutlineHistoryItem>>(
+      `/api/page-analysis/content-outline/history?page=${page}&per_page=${perPage}`
+    );
   }
 }
 

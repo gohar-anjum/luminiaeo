@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -13,52 +14,197 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Download } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import {
+  Search,
+  Clock,
+  Coins,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { usePagination } from "@/hooks/usePagination";
-import { DataTablePagination } from "@/components/ui/DataTablePagination";
-import { apiClient, ApiError, handleApiError, validateUrl, normalizeUrl } from "@/lib/api";
+import { apiClient, handleApiError, validateUrl, normalizeUrl } from "@/lib/api";
+import { ApiError } from "@/lib/api/client";
+import type {
+  SemanticScoreResponse,
+  SemanticScoreHistoryItem,
+  KeywordScore,
+  PaginatedResponse,
+} from "@/lib/api/types";
+import { useQueryClient } from "@tanstack/react-query";
+
+const CREDIT_COST = 1;
+
+function scoreColor(score: number) {
+  if (score >= 0.8) return "text-green-600 dark:text-green-400";
+  if (score >= 0.6) return "text-lime-600 dark:text-lime-400";
+  if (score >= 0.4) return "text-orange-500 dark:text-orange-400";
+  return "text-red-500 dark:text-red-400";
+}
+
+function scoreBarColor(score: number) {
+  if (score >= 0.8) return "bg-green-500";
+  if (score >= 0.6) return "bg-lime-500";
+  if (score >= 0.4) return "bg-orange-400";
+  return "bg-red-500";
+}
+
+function gaugeStrokeColor(score: number) {
+  if (score >= 0.8) return "stroke-green-500";
+  if (score >= 0.6) return "stroke-lime-500";
+  if (score >= 0.4) return "stroke-orange-400";
+  return "stroke-red-500";
+}
+
+function scoreLabel(score: number) {
+  if (score >= 0.8) return "Excellent";
+  if (score >= 0.6) return "Good";
+  if (score >= 0.4) return "Needs Improvement";
+  return "Poor";
+}
+
+function scoreLabelColor(score: number) {
+  if (score >= 0.8) return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+  if (score >= 0.6) return "bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200";
+  if (score >= 0.4) return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+  return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+}
+
+function interpretation(score: number, keyword: string) {
+  if (score >= 0.7)
+    return `Your page has strong semantic relevance for "${keyword}".`;
+  if (score >= 0.4)
+    return `Your page has moderate semantic coverage. Consider adding more content about "${keyword}".`;
+  return `Your page has weak semantic relevance. The content needs significant optimization for "${keyword}".`;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function ScoreGauge({ score }: { score: number }) {
+  const pct = Math.round(score * 100);
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-44 h-44">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+          <path
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            fill="none"
+            className="stroke-muted"
+            strokeWidth="3"
+          />
+          <path
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            fill="none"
+            className={gaugeStrokeColor(score)}
+            strokeWidth="3"
+            strokeDasharray={`${pct}, 100`}
+            strokeLinecap="round"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className={`text-4xl font-bold ${scoreColor(score)}`} data-testid="text-score">
+            {pct}%
+          </div>
+        </div>
+      </div>
+      <span
+        className={`mt-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${scoreLabelColor(score)}`}
+      >
+        {scoreLabel(score)}
+      </span>
+    </div>
+  );
+}
+
+function KeywordBar({
+  item,
+  isPrimary,
+}: {
+  item: KeywordScore;
+  isPrimary: boolean;
+}) {
+  const semPct = Math.round(item.semantic_score * 100);
+  const extPct = Math.round(item.extraction_score * 100);
+  return (
+    <div
+      className={`p-3 rounded-md border ${isPrimary ? "border-primary/40 bg-primary/5" : "border-transparent"}`}
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-sm font-medium">
+          {item.phrase}
+          {isPrimary && (
+            <Badge variant="secondary" className="ml-2 text-[10px] py-0">
+              Primary
+            </Badge>
+          )}
+        </span>
+        <span className={`text-sm font-semibold ${scoreColor(item.semantic_score)}`}>
+          {semPct}%
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] w-16 text-muted-foreground shrink-0">Semantic</span>
+          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${scoreBarColor(item.semantic_score)}`}
+              style={{ width: `${semPct}%` }}
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] w-16 text-muted-foreground shrink-0">Extraction</span>
+          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-muted-foreground/30 transition-all duration-500"
+              style={{ width: `${extPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SemanticScore() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const [url, setUrl] = useState("");
+  const [keyword, setKeyword] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<SemanticScoreResponse | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
+
+  // History
+  const [history, setHistory] = useState<PaginatedResponse<SemanticScoreHistoryItem> | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
   const handleAnalyze = async () => {
     const trimmed = url.trim();
 
     if (!trimmed) {
       setUrlError("Please enter a URL to analyze");
-      toast({
-        title: "Error",
-        description: "Please enter a URL to analyze",
-        variant: "destructive",
-      });
       return;
     }
 
     if (trimmed.length > 2048) {
-      const message = "URL must be 2048 characters or less";
-      setUrlError(message);
-      toast({
-        title: "Invalid URL",
-        description: message,
-        variant: "destructive",
-      });
+      setUrlError("URL must be 2048 characters or less");
       return;
     }
 
     if (!validateUrl(trimmed)) {
-      const message = "Please enter a valid URL";
-      setUrlError(message);
-      toast({
-        title: "Invalid URL",
-        description: message,
-        variant: "destructive",
-      });
+      setUrlError("Please enter a valid URL (e.g. https://example.com)");
       return;
     }
 
@@ -68,110 +214,86 @@ export default function SemanticScore() {
 
     try {
       const normalizedUrl = normalizeUrl(trimmed);
-      const response = await apiClient.getSemanticScore({ url: normalizedUrl });
-
-      setResults({
+      const response = await apiClient.getSemanticScore({
         url: normalizedUrl,
-        semanticScore: response.semantic_score,
+        keyword: keyword.trim() || undefined,
       });
+
+      setResults(response);
+
+      if (!response.from_cache) {
+        queryClient.invalidateQueries({ queryKey: ["/api/billing/balance"] });
+      }
     } catch (error: any) {
       if (error instanceof ApiError) {
         if (error.status === 402) {
           toast({
-            title: "Not enough credits",
-            description: "You don't have enough credits to run this analysis. Visit the Billing page to purchase more credits.",
+            title: "Insufficient credits",
+            description: `You need ${CREDIT_COST} credit for this feature. Visit the Billing page to purchase more.`,
             variant: "destructive",
           });
         } else if (error.status === 422) {
-          const message =
-            error.message ||
-            "Please enter a valid URL";
-          setUrlError(message);
-          toast({
-            title: "Validation error",
-            description: message,
-            variant: "destructive",
-          });
+          setUrlError(error.message || "Please check your input.");
+          toast({ title: "Validation error", description: error.message, variant: "destructive" });
+        } else if (error.status === 429) {
+          toast({ title: "Rate limit reached", description: "Please wait a moment and try again.", variant: "destructive" });
+        } else if (error.status === 503) {
+          toast({ title: "Service unavailable", description: "Analysis service temporarily unavailable. Please try again.", variant: "destructive" });
         } else {
           const { message } = handleApiError(error);
-          toast({
-            title: "Error",
-            description: message,
-            variant: "destructive",
-          });
+          toast({ title: "Error", description: message, variant: "destructive" });
         }
       } else {
         const { message } = handleApiError(error);
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: message, variant: "destructive" });
       }
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const handleExport = () => {
-    toast({
-      title: "Export started",
-      description: "Generating semantic score report...",
-    });
-  };
-
-  const chartData = results?.topics.map((topic: any) => ({
-    name: topic.name,
-    value: topic.coverage,
-  })) || [];
-
-  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
-
-  const {
-    currentPage,
-    totalPages,
-    paginatedData: paginatedMissingTopics,
-    goToPage,
-    itemsPerPage,
-    setItemsPerPage,
-    totalItems: totalMissingTopics,
-  } = usePagination(results?.missingTopics || [], { itemsPerPage: 10 });
-
-  const semanticScore: number | null = results?.semanticScore ?? null;
-  const semanticScorePercentage = semanticScore != null ? Math.round(semanticScore * 100) : null;
-  const focusLabel =
-    semanticScore == null
-      ? null
-      : semanticScore < 0.3
-        ? "Low focus"
-        : semanticScore < 0.6
-          ? "Moderate focus"
-          : "High focus";
-
-  const focusExplanation =
-    semanticScore == null
-      ? null
-      : semanticScore < 0.3
-        ? "This page is not tightly focused on a single primary topic."
-        : semanticScore < 0.6
-          ? "This page covers its topic somewhat consistently."
-          : "This page is strongly aligned with its main topic; good semantic focus.";
+  const loadHistory = useCallback(
+    async (page: number) => {
+      setIsLoadingHistory(true);
+      try {
+        const data = await apiClient.getSemanticScoreHistory(page, 10);
+        setHistory(data);
+        setHistoryPage(page);
+      } catch (error: any) {
+        const { message } = handleApiError(error);
+        toast({ title: "Error loading history", description: message, variant: "destructive" });
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    },
+    [toast]
+  );
 
   return (
     <div className="p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Semantic Score Checker</h1>
         <p className="text-muted-foreground">
-          Analyze and improve your content's semantic relevance
+          Evaluate how semantically relevant your page's content is for a target keyword
         </p>
       </div>
 
-      <Card data-testid="card-analyze">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="url">URL to Analyze</Label>
-              <div className="flex gap-2">
+      <Tabs
+        defaultValue="analyze"
+        onValueChange={(v) => {
+          if (v === "history" && !history) loadHistory(1);
+        }}
+      >
+        <TabsList>
+          <TabsTrigger value="analyze">Analyze</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="analyze" className="space-y-6 mt-4">
+          <Card data-testid="card-analyze">
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="url">Page URL</Label>
                 <Input
                   id="url"
                   placeholder="https://example.com/your-page"
@@ -182,198 +304,226 @@ export default function SemanticScore() {
                   }}
                   data-testid="input-url"
                 />
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing}
-                  data-testid="button-analyze"
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  {isAnalyzing ? "Analyzing..." : "Analyze"}
-                </Button>
+                {urlError && (
+                  <p className="text-xs text-destructive">{urlError}</p>
+                )}
               </div>
-              {urlError && (
-                <p className="text-xs text-destructive mt-1">
-                  {urlError}
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {isAnalyzing && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64 lg:col-span-2" />
-          <Skeleton className="h-96 lg:col-span-3" />
-        </div>
-      )}
-
-      {results && !isAnalyzing && (
-        <>
-          <div className="flex justify-end">
-            <Button onClick={handleExport} variant="outline" data-testid="button-export">
-              <Download className="w-4 h-4 mr-2" />
-              Export Report
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Score Gauge */}
-            <Card data-testid="card-score">
-              <CardHeader>
-                <CardTitle>Semantic Score</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center py-8">
-                  <div className="relative w-40 h-40">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="hsl(var(--muted))"
-                        strokeWidth="3"
-                      />
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="3"
-                        strokeDasharray={`${semanticScorePercentage ?? 0}, 100`}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="text-4xl font-bold" data-testid="text-score">
-                        {semanticScore != null ? semanticScore.toFixed(2) : "--"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">scale 0–1</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 space-y-2">
-                  <div className="text-sm font-medium">Overall Assessment</div>
-                  {focusLabel && (
-                    <Badge
-                      variant={
-                        semanticScore != null && semanticScore >= 0.6
-                          ? "default"
-                          : semanticScore != null && semanticScore >= 0.3
-                            ? "secondary"
-                            : "outline"
-                      }
-                    >
-                      {focusLabel}
-                    </Badge>
-                  )}
-                  {semanticScore != null && (
-                    <p className="text-xs text-muted-foreground">
-                      {semanticScore.toFixed(2)} semantic score (cosine similarity between page and primary topic).
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Meta Data */}
-            <Card className="lg:col-span-2" data-testid="card-meta">
-              <CardHeader>
-                <CardTitle>Meta Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {focusExplanation && (
-                  <p className="text-sm text-muted-foreground">
-                    {focusExplanation}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Topic Coverage Chart */}
-            <Card data-testid="card-coverage">
-              <CardHeader>
-                <CardTitle>Topic Coverage</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {chartData.length > 0 ? (
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={chartData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          label
-                        >
-                          {chartData.map((_: any, index: number) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Topic coverage breakdown will appear here when available.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Missing Topics */}
-            <Card data-testid="card-missing-topics">
-              <CardHeader>
-                <CardTitle>Missing Topics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {paginatedMissingTopics.length > 0 ? (
+              <div className="space-y-2">
+                <Label htmlFor="keyword">Focus Keyword</Label>
+                <Input
+                  id="keyword"
+                  placeholder="Focus keyword (auto-detected if empty)"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  data-testid="input-keyword"
+                />
+              </div>
+              <Button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className="w-full"
+                data-testid="button-analyze"
+              >
+                {isAnalyzing ? (
                   <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Computing semantic embeddings...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 mr-2" />
+                    Analyze
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      <Coins className="w-3 h-3 mr-1" />
+                      {CREDIT_COST} credit
+                    </Badge>
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {isAnalyzing && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Skeleton className="h-72" />
+              <Skeleton className="h-72 lg:col-span-2" />
+            </div>
+          )}
+
+          {results && !isAnalyzing && (
+            <>
+              {/* Cache badge */}
+              {results.from_cache && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="gap-1 text-xs">
+                    <Clock className="w-3 h-3" />
+                    Cached result (free)
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    Analyzed {formatDate(results.analyzed_at)}
+                  </span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Score Gauge */}
+                <Card data-testid="card-score">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Overall Score</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center py-4">
+                    <ScoreGauge score={results.semantic_score} />
+                    {results.primary_keyword && (
+                      <p className="mt-4 text-sm font-medium text-center">
+                        {results.primary_keyword}
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-muted-foreground text-center max-w-[260px]">
+                      {interpretation(
+                        results.semantic_score,
+                        results.primary_keyword
+                      )}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Keyword Scores */}
+                <Card className="lg:col-span-2" data-testid="card-keywords">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Keyword Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 max-h-[450px] overflow-y-auto">
+                    {results.keyword_scores.map((ks) => (
+                      <KeywordBar
+                        key={ks.phrase}
+                        item={ks}
+                        isPrimary={ks.phrase === results.primary_keyword}
+                      />
+                    ))}
+                    {results.keyword_scores.length === 0 && (
+                      <p className="text-sm text-muted-foreground py-4 text-center">
+                        No keyword breakdown available.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        {/* History Tab */}
+        <TabsContent value="history" className="space-y-4 mt-4">
+          {isLoadingHistory && (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12" />
+              ))}
+            </div>
+          )}
+
+          {history && !isLoadingHistory && (
+            <>
+              {history.data.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    No analysis history yet.
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Topic</TableHead>
-                          <TableHead>Suggestion</TableHead>
+                          <TableHead>URL</TableHead>
+                          <TableHead>Keyword</TableHead>
+                          <TableHead>Score</TableHead>
+                          <TableHead>Date</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paginatedMissingTopics.map((topic: any, index: number) => {
-                          const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                        {history.data.map((item, idx) => {
+                          const pct = Math.round(item.semantic_score * 100);
                           return (
-                            <TableRow key={`${topic.name}-${actualIndex}`} data-testid={`row-topic-${actualIndex}`}>
-                              <TableCell className="font-medium">{topic.name}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {topic.suggestion}
-                              </TableCell>
-                            </TableRow>
+                            <>
+                              <TableRow
+                                key={idx}
+                                className="cursor-pointer"
+                                onClick={() =>
+                                  setExpandedRow(expandedRow === idx ? null : idx)
+                                }
+                              >
+                                <TableCell className="max-w-[220px] truncate text-sm">
+                                  {item.url}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {item.keyword || item.primary_keyword || "—"}
+                                </TableCell>
+                                <TableCell>
+                                  <span
+                                    className={`text-sm font-semibold ${scoreColor(item.semantic_score)}`}
+                                  >
+                                    {pct}%
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {formatDate(item.analyzed_at)}
+                                </TableCell>
+                              </TableRow>
+                              {expandedRow === idx && (
+                                <TableRow key={`${idx}-expanded`}>
+                                  <TableCell colSpan={4} className="bg-muted/50 p-4">
+                                    <div className="space-y-2">
+                                      {item.keyword_scores &&
+                                        item.keyword_scores.map((ks) => (
+                                          <KeywordBar
+                                            key={ks.phrase}
+                                            item={ks}
+                                            isPrimary={ks.phrase === item.primary_keyword}
+                                          />
+                                        ))}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </>
                           );
                         })}
                       </TableBody>
                     </Table>
-                    <DataTablePagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      itemsPerPage={itemsPerPage}
-                      totalItems={totalMissingTopics}
-                      onPageChange={goToPage}
-                      onItemsPerPageChange={setItemsPerPage}
-                    />
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Suggested missing topics will appear here when detailed analysis is available.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      )}
+                  </CardContent>
+                  {history.last_page > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t">
+                      <span className="text-sm text-muted-foreground">
+                        Page {history.current_page} of {history.last_page} ({history.total} total)
+                      </span>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={history.current_page <= 1}
+                          onClick={() => loadHistory(historyPage - 1)}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={history.current_page >= history.last_page}
+                          onClick={() => loadHistory(historyPage + 1)}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              )}
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
