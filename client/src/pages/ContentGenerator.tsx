@@ -619,15 +619,15 @@ export default function ContentGenerator() {
                               <TableRow key={`${idx}-expanded`}>
                                 <TableCell colSpan={4} className="bg-muted/50 p-4">
                                   <h4 className="font-semibold mb-2">
-                                    {item.outline.title}
+                                    Outline for &quot;{item.keyword}&quot;
                                   </h4>
                                   <div className="space-y-1 text-sm">
-                                    {item.outline.sections.map((s, si) => (
+                                    {(Array.isArray(item.outline) ? item.outline : []).map((s, si) => (
                                       <div key={si} className="ml-2">
                                         <div className="font-medium">
                                           {s.heading}
                                         </div>
-                                        {s.subsections.map((sub, ssi) => (
+                                        {(s.subsections ?? []).map((sub, ssi) => (
                                           <div
                                             key={ssi}
                                             className="ml-4 text-muted-foreground"
@@ -638,7 +638,7 @@ export default function ContentGenerator() {
                                       </div>
                                     ))}
                                   </div>
-                                  {item.semantic_keywords.length > 0 && (
+                                  {item.semantic_keywords && item.semantic_keywords.length > 0 && (
                                     <div className="flex flex-wrap gap-1 mt-3">
                                       {item.semantic_keywords.map((kw) => (
                                         <Badge

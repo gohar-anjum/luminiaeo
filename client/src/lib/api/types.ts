@@ -524,17 +524,21 @@ export interface MetaOptimizeResponse {
 }
 
 export interface MetaOptimizeHistoryItem {
+  id?: number;
+  user_id?: number;
   url: string;
-  keyword: string | null;
-  title: string;
-  description: string;
+  target_keyword: string | null;
   original_title: string;
   original_description: string;
-  suggestions: string[];
+  suggested_title: string;
+  suggested_description: string;
+  suggestions: string[] | null;
+  keywords?: Array<{ phrase: string; score: number }>;
   intent: string | null;
-  primary_keyword: string | null;
-  from_cache: boolean;
+  word_count?: number;
   analyzed_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Page Analysis — Semantic Score Checker
@@ -558,13 +562,17 @@ export interface SemanticScoreResponse {
 }
 
 export interface SemanticScoreHistoryItem {
-  url: string;
-  keyword: string | null;
+  id?: number;
+  user_id?: number;
+  source_url: string;
+  target_keyword: string | null;
+  comparison_type?: string;
+  comparison_value?: string;
   semantic_score: number;
-  primary_keyword: string | null;
-  keyword_scores: KeywordScore[];
-  from_cache: boolean;
+  keyword_scores: KeywordScore[] | null;
   analyzed_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Page Analysis — Semantic Content Generator
@@ -607,14 +615,19 @@ export interface ContentOutlineResponse {
   generated_at: string;
 }
 
+/** History API returns outline as an array of sections (no title/estimated_word_count/faq_suggestions) */
 export interface ContentOutlineHistoryItem {
+  id?: number;
+  user_id?: number;
   keyword: string;
   tone: ContentTone;
   intent: string | null;
-  outline: ContentOutline;
+  /** In history, outline is the raw array of sections */
+  outline: OutlineSection[];
   semantic_keywords: string[];
-  from_cache: boolean;
   generated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Shared paginated history response

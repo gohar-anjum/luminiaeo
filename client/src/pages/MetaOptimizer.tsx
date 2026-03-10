@@ -194,7 +194,7 @@ export default function MetaOptimizer() {
 
   const handleReanalyze = (item: MetaOptimizeHistoryItem) => {
     setUrl(item.url);
-    setKeyword(item.keyword ?? "");
+    setKeyword(item.target_keyword ?? "");
     setResults(null);
     setExpandedRow(null);
   };
@@ -510,10 +510,10 @@ export default function MetaOptimizer() {
                                 {item.url}
                               </TableCell>
                               <TableCell className="text-sm">
-                                {item.keyword || "—"}
+                                {item.target_keyword || "—"}
                               </TableCell>
                               <TableCell className="max-w-[220px] truncate text-sm">
-                                {item.title}
+                                {item.suggested_title}
                               </TableCell>
                               <TableCell>
                                 <IntentBadge intent={item.intent} />
@@ -552,7 +552,7 @@ export default function MetaOptimizer() {
                                       <div className="font-medium mb-1">
                                         Optimized Title
                                       </div>
-                                      <p>{item.title}</p>
+                                      <p>{item.suggested_title}</p>
                                     </div>
                                     <div>
                                       <div className="font-medium mb-1">
@@ -566,7 +566,7 @@ export default function MetaOptimizer() {
                                       <div className="font-medium mb-1">
                                         Optimized Description
                                       </div>
-                                      <p>{item.description}</p>
+                                      <p>{item.suggested_description}</p>
                                     </div>
                                     {item.suggestions && item.suggestions.length > 0 && (
                                       <div className="md:col-span-2">

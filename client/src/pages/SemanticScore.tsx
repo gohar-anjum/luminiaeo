@@ -131,8 +131,8 @@ function KeywordBar({
   item: KeywordScore;
   isPrimary: boolean;
 }) {
-  const semPct = Math.round(item.semantic_score * 100);
-  const extPct = Math.round(item.extraction_score * 100);
+  const semPct = Math.round((item.semantic_score ?? 0) * 100);
+  const extPct = Math.round((item.extraction_score ?? 0) * 100);
   return (
     <div
       className={`p-3 rounded-md border ${isPrimary ? "border-primary/40 bg-primary/5" : "border-transparent"}`}
@@ -455,10 +455,10 @@ export default function SemanticScore() {
                                 }
                               >
                                 <TableCell className="max-w-[220px] truncate text-sm">
-                                  {item.url}
+                                  {item.source_url}
                                 </TableCell>
                                 <TableCell className="text-sm">
-                                  {item.keyword || item.primary_keyword || "—"}
+                                  {item.target_keyword || item.comparison_value || "—"}
                                 </TableCell>
                                 <TableCell>
                                   <span
@@ -475,14 +475,19 @@ export default function SemanticScore() {
                                 <TableRow key={`${idx}-expanded`}>
                                   <TableCell colSpan={4} className="bg-muted/50 p-4">
                                     <div className="space-y-2">
-                                      {item.keyword_scores &&
+                                      {item.keyword_scores && item.keyword_scores.length > 0 ? (
                                         item.keyword_scores.map((ks) => (
                                           <KeywordBar
                                             key={ks.phrase}
                                             item={ks}
-                                            isPrimary={ks.phrase === item.primary_keyword}
+                                            isPrimary={ks.phrase === (item.target_keyword ?? item.comparison_value)}
                                           />
-                                        ))}
+                                        ))
+                                      ) : (
+                                        <p className="text-sm text-muted-foreground">
+                                          No keyword breakdown available for this analysis.
+                                        </p>
+                                      )}
                                     </div>
                                   </TableCell>
                                 </TableRow>
