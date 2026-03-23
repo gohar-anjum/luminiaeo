@@ -58,6 +58,13 @@ import type {
   ContentOutlineResponse,
   ContentOutlineHistoryItem,
   PaginatedResponse,
+  CreateKeywordClusterRequest,
+  CreateKeywordClusterResponse,
+  KeywordClusterJobStatus,
+  KeywordClusterResultOutcome,
+  KeywordClusterResultSuccess,
+  KeywordClusterResultNotReady,
+  KeywordClusterResultFailed,
 } from "./types";
 
 export class ApiError extends Error {
@@ -691,6 +698,106 @@ export class ApiClient {
   ): Promise<PaginatedResponse<ContentOutlineHistoryItem>> {
     return this.get<PaginatedResponse<ContentOutlineHistoryItem>>(
       `/api/page-analysis/content-outline/history?page=${page}&per_page=${perPage}`
+    );
+  }
+
+  /**
+   * POST /api/keyword-clusters — 200 cache hit or 202 job queued (Laravel envelope).
+   * On failure, `ApiError.response` is the full parsed JSON body when available (includes Laravel `errors` for 422).
+   */
+  async createKeywordCluster(
+    body: CreateKeywordClusterRequest,
+    options?: { signal?: AbortSignal }
+  ): Promise<CreateKeywordClusterResponse> {
+    const url = getApiUrl("/api/keyword-clusters");
+    const response = await fetch(url, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(body),
+      credentials: "include",
+      signal: options?.signal,
+    });
+
+    let data: Record<string, unknown>;
+    try {
+      data = (await response.json()) as Record<string, unknown>;
+    } catch {
+      throw new ApiError("Invalid response from server", response.status);
+    }
+
+    const envelopeStatus =
+      typeof data.status === "number" ? data.status : response.status;
+
+    if (envelopeStatus === 200 || envelopeStatus === 202) {
+      return data.response as CreateKeywordClusterResponse;
+    }
+
+    throw new ApiError(
+      (data.message as string) || response.statusText || "Request failed",
+      envelopeStatus,
+      data
+    );
+  }
+
+  /** GET /api/keyword-clusters/{id}/status */
+  async getKeywordClusterStatus(
+    jobId: number,
+    options?: { signal?: AbortSignal }
+  ): Promise<KeywordClusterJobStatus> {
+    return this.request<KeywordClusterJobStatus>(
+      `/api/keyword-clusters/${jobId}/status`,
+      { method: "GET", signal: options?.signal }
+    );
+  }
+
+  /**
+   * GET /api/keyword-clusters/{id}/result — 200 completed, 409 not ready, 422 failed job (all use envelope).
+   */
+  async getKeywordClusterResult(
+    jobId: number,
+    options?: { signal?: AbortSignal }
+  ): Promise<KeywordClusterResultOutcome> {
+    const url = getApiUrl(`/api/keyword-clusters/${jobId}/result`);
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.getAuthHeaders(),
+      credentials: "include",
+      signal: options?.signal,
+    });
+
+    let data: Record<string, unknown>;
+    try {
+      data = (await response.json()) as Record<string, unknown>;
+    } catch {
+      throw new ApiError("Invalid response from server", response.status);
+    }
+
+    const envelopeStatus =
+      typeof data.status === "number" ? data.status : response.status;
+
+    if (envelopeStatus === 200 && data.response) {
+      return {
+        kind: "completed" as const,
+        body: data.response as KeywordClusterResultSuccess,
+      };
+    }
+    if (envelopeStatus === 409 && data.response) {
+      return {
+        kind: "not_ready" as const,
+        body: data.response as KeywordClusterResultNotReady,
+      };
+    }
+    if (envelopeStatus === 422 && data.response) {
+      return {
+        kind: "failed" as const,
+        body: data.response as KeywordClusterResultFailed,
+      };
+    }
+
+    throw new ApiError(
+      (data.message as string) || response.statusText || "Request failed",
+      envelopeStatus,
+      data.response
     );
   }
 }

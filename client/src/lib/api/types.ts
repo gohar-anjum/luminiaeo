@@ -678,4 +678,95 @@ export interface LocationCodeResponse {
   response: LocationCode;
 }
 
+// --- Keyword cluster tree (/api/keyword-clusters) ---
+
+export type KeywordClusterIntent =
+  | "informational"
+  | "commercial"
+  | "transactional"
+  | "navigational";
+
+export interface KeywordClusterTreeNode {
+  id: string;
+  label: string;
+  intent: KeywordClusterIntent;
+  children: KeywordClusterTreeNode[];
+}
+
+export interface KeywordClusterPayloadMeta {
+  partial: boolean;
+  suggest_errors: string[];
+  deduped_count: number;
+  raw_count: number;
+}
+
+export interface KeywordClusterPayload {
+  schema_version: number;
+  seed: string;
+  tree: KeywordClusterTreeNode;
+  meta: KeywordClusterPayloadMeta;
+}
+
+export interface CreateKeywordClusterRequest {
+  keyword: string;
+  language_code?: string;
+  location_code?: number;
+}
+
+export type KeywordClusterJobState =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed";
+
+export interface CreateKeywordClusterCacheHit {
+  cache_hit: true;
+  snapshot_id: number;
+  expires_at: string;
+  payload: KeywordClusterPayload;
+}
+
+export interface CreateKeywordClusterJobQueued {
+  cache_hit: false;
+  job_id: number;
+  status: string;
+  status_url: string;
+  result_url: string;
+}
+
+export type CreateKeywordClusterResponse =
+  | CreateKeywordClusterCacheHit
+  | CreateKeywordClusterJobQueued;
+
+export interface KeywordClusterJobStatus {
+  job_id: number;
+  status: KeywordClusterJobState;
+  snapshot_id: number | null;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface KeywordClusterResultSuccess {
+  job_id: number;
+  snapshot_id: number;
+  expires_at: string;
+  payload: KeywordClusterPayload;
+}
+
+export interface KeywordClusterResultNotReady {
+  job_id: number;
+  status: "pending" | "processing";
+}
+
+export interface KeywordClusterResultFailed {
+  job_id: number;
+  status: "failed";
+  error_message: string | null;
+}
+
+export type KeywordClusterResultOutcome =
+  | { kind: "completed"; body: KeywordClusterResultSuccess }
+  | { kind: "not_ready"; body: KeywordClusterResultNotReady }
+  | { kind: "failed"; body: KeywordClusterResultFailed };
 

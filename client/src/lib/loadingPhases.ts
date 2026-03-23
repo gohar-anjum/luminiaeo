@@ -10,6 +10,7 @@ const ENDPOINT_PHASES: Record<string, string> = {
   "/api/faq/task": "Initiating FAQ generation…",
   "/api/faq/generate": "Generating FAQs…",
   "/api/keyword-research": "Initiating keyword research…",
+  "/api/keyword-clusters": "Building keyword cluster…",
   "/api/keyword-planner/ideas": "Fetching keyword ideas…",
   "/api/keyword-planner/informational-ideas": "Fetching informational keyword ideas…",
   "/api/keyword-planner/for-site": "Loading keywords for site…",

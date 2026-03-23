@@ -15,6 +15,7 @@ export const REAL_API_ENDPOINTS = [
   "/api/faq",
   "/api/keyword-research",
   "/api/keyword-planner",
+  "/api/keyword-clusters",
   "/api/seo",
   "/api/serp",
   "/api/citations",
