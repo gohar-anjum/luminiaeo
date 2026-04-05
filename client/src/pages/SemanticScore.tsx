@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -343,13 +343,11 @@ export default function SemanticScore() {
             </CardContent>
           </Card>
 
-          {isAnalyzing && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Skeleton className="h-72" />
-              <Skeleton className="h-72 lg:col-span-2" />
-            </div>
-          )}
-
+          <ContentAreaLoader
+            loading={isAnalyzing}
+            phase="Computing semantic score…"
+            minHeightClassName="min-h-[300px]"
+          >
           {results && !isAnalyzing && (
             <>
               {/* Cache badge */}
@@ -410,18 +408,16 @@ export default function SemanticScore() {
               </div>
             </>
           )}
+          </ContentAreaLoader>
         </TabsContent>
 
         {/* History Tab */}
         <TabsContent value="history" className="space-y-4 mt-4">
-          {isLoadingHistory && (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12" />
-              ))}
-            </div>
-          )}
-
+          <ContentAreaLoader
+            loading={isLoadingHistory}
+            phase="Loading analysis history…"
+            minHeightClassName="min-h-[200px]"
+          >
           {history && !isLoadingHistory && (
             <>
               {history.data.length === 0 ? (
@@ -527,6 +523,7 @@ export default function SemanticScore() {
               )}
             </>
           )}
+          </ContentAreaLoader>
         </TabsContent>
       </Tabs>
     </div>

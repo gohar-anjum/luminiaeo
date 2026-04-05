@@ -1,24 +1,48 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { getApiUrl } from "@/lib/apiConfig";
-import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
+
+export type AuthUser = {
+  id?: number;
+  name: string;
+  email: string;
+  is_admin: boolean;
+  suspended_at?: string | null;
+  credits_balance?: number;
+};
+
+function toAuthUser(raw: Record<string, unknown> | null | undefined, emailFallback?: string): AuthUser {
+  if (!raw) {
+    return { name: "", email: emailFallback ?? "", is_admin: false };
+  }
+  const email = (typeof raw.email === "string" ? raw.email : emailFallback) ?? "";
+  const name = (typeof raw.name === "string" ? raw.name : "") || email.split("@")[0] || "";
+  const is_admin = raw.is_admin === true || raw.is_admin === 1;
+  return {
+    id: typeof raw.id === "number" ? raw.id : undefined,
+    name,
+    email,
+    is_admin,
+    suspended_at: raw.suspended_at != null ? String(raw.suspended_at) : null,
+    credits_balance: typeof raw.credits_balance === "number" ? raw.credits_balance : undefined,
+  };
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: { name: string; email: string } | null;
+  user: AuthUser | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
   signup: (name: string, email: string, password: string, passwordConfirmation: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setPhase } = useLoadingPhase();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (stored && authToken) {
         const authData = JSON.parse(stored);
         setIsAuthenticated(true);
-        setUser(authData.user);
+        setUser(toAuthUser(authData.user));
         setIsLoading(false);
         
         try {
@@ -46,17 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (res.ok) {
             const response = await res.json();
             const userData = response.response?.user || response.user || response;
-            
-            setUser({ 
-              name: userData.name || userData.email?.split("@")[0] || "", 
-              email: userData.email || "" 
-            });
-            localStorage.setItem("auth", JSON.stringify({ 
-              user: { 
-                name: userData.name || userData.email?.split("@")[0] || "", 
-                email: userData.email || "" 
-              } 
-            }));
+            const next = toAuthUser(
+              typeof userData === "object" && userData !== null
+                ? (userData as Record<string, unknown>)
+                : undefined,
+            );
+            setUser(next);
+            localStorage.setItem("auth", JSON.stringify({ user: next }));
           } else if (res.status === 401) {
             setIsAuthenticated(false);
             setUser(null);
@@ -83,18 +103,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (res.ok) {
             const response = await res.json();
             const userData = response.response?.user || response.user || response;
-            
+            const next = toAuthUser(
+              typeof userData === "object" && userData !== null
+                ? (userData as Record<string, unknown>)
+                : undefined,
+            );
             setIsAuthenticated(true);
-            setUser({ 
-              name: userData.name || userData.email?.split("@")[0] || "", 
-              email: userData.email || "" 
-            });
-            localStorage.setItem("auth", JSON.stringify({ 
-              user: { 
-                name: userData.name || userData.email?.split("@")[0] || "", 
-                email: userData.email || "" 
-              } 
-            }));
+            setUser(next);
+            localStorage.setItem("auth", JSON.stringify({ user: next }));
           } else {
             setIsAuthenticated(false);
             setUser(null);
@@ -116,73 +132,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    setPhase("Signing in…");
-    try {
-      const res = await apiRequest("POST", getApiUrl("/api/login"), { email, password });
+  const login = async (email: string, password: string): Promise<AuthUser> => {
+    const res = await apiRequest("POST", getApiUrl("/api/login"), { email, password });
     const response = await res.json();
-    
+
     if (response.response && response.response.user) {
       const { auth_token, user: userData } = response.response;
-      
+
       if (auth_token) {
         localStorage.setItem("auth_token", auth_token);
       }
-      
+
+      const next = toAuthUser(
+        typeof userData === "object" && userData !== null
+          ? (userData as Record<string, unknown>)
+          : undefined,
+        email,
+      );
       setIsAuthenticated(true);
-      const user = { 
-        name: userData.name || email.split("@")[0], 
-        email: userData.email || email 
-      };
-      setUser(user);
-      localStorage.setItem("auth", JSON.stringify({ user, auth_token }));
-    } else {
-      const userData = response.user || response;
-      setIsAuthenticated(true);
-      const user = { 
-        name: userData.name || email.split("@")[0], 
-        email: userData.email || email 
-      };
-      setUser(user);
-      localStorage.setItem("auth", JSON.stringify({ user }));
+      setUser(next);
+      localStorage.setItem("auth", JSON.stringify({ user: next, auth_token }));
+      return next;
     }
-    } finally {
-      setPhase(null);
-    }
+
+    const userData = response.user || response;
+    const next = toAuthUser(
+      typeof userData === "object" && userData !== null
+        ? (userData as Record<string, unknown>)
+        : undefined,
+      email,
+    );
+    setIsAuthenticated(true);
+    setUser(next);
+    localStorage.setItem("auth", JSON.stringify({ user: next }));
+    return next;
   };
 
   const signup = async (name: string, email: string, password: string, passwordConfirmation: string) => {
-    setPhase("Creating account…");
-    try {
-      const res = await apiRequest("POST", getApiUrl("/api/register"), { 
-      name, 
-      email, 
-      password, 
-      password_confirmation: passwordConfirmation 
+    const res = await apiRequest("POST", getApiUrl("/api/register"), {
+      name,
+      email,
+      password,
+      password_confirmation: passwordConfirmation,
     });
     const response = await res.json();
-    
+
     if (response.status === 200 || response.message) {
       return;
     }
-    
+
     if (response.response && response.response.user && response.response.auth_token) {
       const { auth_token, user: userData } = response.response;
-      
+
       if (auth_token) {
         localStorage.setItem("auth_token", auth_token);
       }
-      
+
+      const next = toAuthUser(
+        typeof userData === "object" && userData !== null
+          ? (userData as Record<string, unknown>)
+          : undefined,
+        email,
+      );
       setIsAuthenticated(true);
-      const user = { 
-        name: userData.name || name, 
-        email: userData.email || email 
-      };
-      setUser(user);
-      localStorage.setItem("auth", JSON.stringify({ user, auth_token }));
-    }
-    } finally {
-      setPhase(null);
+      setUser(next);
+      localStorage.setItem("auth", JSON.stringify({ user: next, auth_token }));
     }
   };
 
@@ -218,16 +232,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const response = await res.json();
         const userData = response.response?.user || response.user || response;
-        
-        const updatedUser = { 
-          name: userData.name || userData.email?.split("@")[0] || "", 
-          email: userData.email || "" 
-        };
-        
-        setUser(updatedUser);
-        localStorage.setItem("auth", JSON.stringify({ 
-          user: updatedUser 
-        }));
+        const next = toAuthUser(
+          typeof userData === "object" && userData !== null
+            ? (userData as Record<string, unknown>)
+            : undefined,
+        );
+        setUser(next);
+        localStorage.setItem("auth", JSON.stringify({ user: next }));
       } else if (res.status === 401) {
         setIsAuthenticated(false);
         setUser(null);

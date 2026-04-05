@@ -11,7 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, Network, AlertTriangle } from "lucide-react";
+import { Download, Network, AlertTriangle, Loader2 } from "lucide-react";
+import { PhaseLoader } from "@/components/PhaseLoader";
 import * as d3 from "d3";
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
@@ -606,6 +607,14 @@ export default function Clustering() {
           </div>
         </CardContent>
       </Card>
+
+      {busy ? (
+        <Card>
+          <CardContent className="flex justify-center py-10 min-h-[220px]">
+            <PhaseLoader phase={statusLabel(phase)} size="md" />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {phase === "ready" && payload && treeRoot ? (
         <>

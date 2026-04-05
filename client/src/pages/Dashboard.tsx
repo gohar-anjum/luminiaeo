@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 import {
   Table,
   TableBody,
@@ -68,25 +68,6 @@ export default function Dashboard() {
     retry: false,
   });
   const transactions = transactionsData?.transactions ?? [];
-
-  if (isLoading) {
-    return (
-      <div className="p-8 space-y-8">
-        <div>
-          <Skeleton className="h-10 w-64 mb-2" />
-          <Skeleton className="h-5 w-96" />
-        </div>
-        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-40" />
-          ))}
-        </div> */}
-        <div className="grid grid-cols-1 gap-6">
-          <Skeleton className="h-96" />
-        </div>
-      </div>
-    );
-  }
 
   // const metrics = data?.metrics;
   // const trendData = metrics?.queriesAnalyzed.trend.map((value: number, index: number) => ({
@@ -232,6 +213,7 @@ export default function Dashboard() {
         </Card>
       </div> */}
 
+      <ContentAreaLoader loading={isLoading} phase="Loading dashboard…" minHeightClassName="min-h-[280px]">
       <div className="grid grid-cols-1 gap-6">
         {features.length > 0 && (
           <Card className="me-12" data-testid="card-credit-consumption">
@@ -280,19 +262,12 @@ export default function Dashboard() {
             </p>
           </CardHeader>
           <CardContent>
-            {transactionsLoading ? (
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
-                    <Skeleton className="w-2 h-2 rounded-full mt-2 shrink-0" />
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-3 w-24" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : transactionsError ? (
+            <ContentAreaLoader
+              loading={transactionsLoading && !isLoading}
+              phase="Loading recent activity…"
+              minHeightClassName="min-h-[160px]"
+            >
+            {transactionsError ? (
               <p className="text-sm text-muted-foreground" data-testid="recent-activity-error">
                 Unable to load recent activity. You may need to sign in again.
               </p>
@@ -347,6 +322,7 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+            </ContentAreaLoader>
           </CardContent>
         </Card>
 
@@ -372,6 +348,7 @@ export default function Dashboard() {
           </CardContent>
         </Card> */}
       </div>
+      </ContentAreaLoader>
     </div>
   );
 }

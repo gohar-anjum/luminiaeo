@@ -4,19 +4,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading, user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      setLocation(user.is_admin ? "/admin" : "/dashboard");
+    }
+  }, [authLoading, isAuthenticated, user, setLocation]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,11 +38,10 @@ export default function Login() {
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
-      await login(email, password);
-      await new Promise(resolve => setTimeout(resolve, 100));
-      setLocation("/dashboard");
+      const authUser = await login(email, password);
+      setLocation(authUser.is_admin ? "/admin" : "/dashboard");
     } catch (error) {
       toast({
         title: "Error",
@@ -42,9 +49,17 @@ export default function Login() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
+
+  if (!authLoading && isAuthenticated && user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-background p-4">
+        <p className="text-sm text-muted-foreground">Redirecting…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-background p-4">
@@ -63,59 +78,65 @@ export default function Login() {
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                data-testid="input-email"
-              />
-            </div>
+          <ContentAreaLoader
+            loading={isSubmitting}
+            phase="Signing in…"
+            minHeightClassName="min-h-[260px]"
+          >
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  data-testid="input-email"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password">
-                  <a
-                    className="text-sm text-primary hover:underline"
-                    data-testid="link-forgot-password"
-                  >
-                    Forgot password?
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link href="/forgot-password">
+                    <a
+                      className="text-sm text-primary hover:underline"
+                      data-testid="link-forgot-password"
+                    >
+                      Forgot password?
+                    </a>
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  data-testid="input-password"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isSubmitting}
+                data-testid="button-login"
+              >
+                Sign in
+              </Button>
+
+              <div className="text-center text-sm text-muted-foreground">
+                Don't have an account?{" "}
+                <Link href="/signup">
+                  <a className="text-primary hover:underline" data-testid="link-signup">
+                    Sign up
                   </a>
                 </Link>
               </div>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                data-testid="input-password"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-              data-testid="button-login"
-            >
-              {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
-
-            <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link href="/signup">
-                <a className="text-primary hover:underline" data-testid="link-signup">
-                  Sign up
-                </a>
-              </Link>
-            </div>
-          </form>
+            </form>
+          </ContentAreaLoader>
         </CardContent>
       </Card>
     </div>

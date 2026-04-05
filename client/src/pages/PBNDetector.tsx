@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PhaseLoader } from "@/components/PhaseLoader";
 import { Progress } from "@/components/ui/progress";
 import {
   Table,
@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Loader2 } from "lucide-react";
+import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
 import { usePagination } from "@/hooks/usePagination";
@@ -345,25 +345,22 @@ export default function PBNDetector() {
           <CardHeader>
             <CardTitle>Analysis Status</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                {taskStatus === "processing" && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                )}
-                <span className="font-medium">
-                  Status: {taskStatus ? taskStatus.charAt(0).toUpperCase() + taskStatus.slice(1) : "Initializing..."}
-                </span>
-              </div>
-              {taskStatus === "processing" && (
-                <Progress value={undefined} className="h-2" />
-              )}
-              <p className="text-sm text-muted-foreground">
-                {taskStatus === "processing" 
-                  ? "PBN detection is in progress. This may take a few minutes..."
-                  : "Please wait while we analyze your backlinks..."}
-              </p>
-            </div>
+          <CardContent className="min-h-[200px] flex flex-col items-center justify-center py-8">
+            <PhaseLoader
+              phase={
+                taskStatus
+                  ? `Status: ${taskStatus.charAt(0).toUpperCase() + taskStatus.slice(1)} — ${
+                      taskStatus === "processing"
+                        ? "PBN detection in progress (may take a few minutes)"
+                        : "Analyzing backlinks…"
+                    }`
+                  : "Starting backlink analysis…"
+              }
+              size="md"
+            />
+            {taskStatus === "processing" && (
+              <Progress value={undefined} className="h-2 w-full max-w-md mt-6" />
+            )}
           </CardContent>
         </Card>
       )}

@@ -25,7 +25,7 @@ import { formatNumber, formatCurrency } from "@/utils/formatters";
 import { Search, Download, Plus, FileText, ArrowUpDown, Loader2, Database } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
-import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 import { registerMockData } from "@/lib/queryClient";
 import keywordsData from "@/data/keywords.json";
 import { usePagination } from "@/hooks/usePagination";
@@ -52,7 +52,6 @@ type Keyword = {
 
 export default function KeywordResearch() {
   const { toast } = useToast();
-  const { setPhase } = useLoadingPhase();
   const [, setLocation] = useLocation();
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -190,7 +189,6 @@ export default function KeywordResearch() {
           }));
           setDisplayData(mapped);
           setIsCreating(false);
-          setPhase(null);
           toast({
             title: "Research Complete",
             description: `Found ${results.keywords?.length ?? 0} keywords`,
@@ -201,7 +199,6 @@ export default function KeywordResearch() {
             pollingIntervalRef.current = null;
           }
           setIsCreating(false);
-          setPhase(null);
           toast({
             title: "Research Failed",
             description: "Keyword research job failed",
@@ -212,7 +209,7 @@ export default function KeywordResearch() {
         console.error("Error polling job status:", error);
       }
     },
-    [toast, setPhase]
+    [toast]
   );
 
   useEffect(() => {
@@ -270,7 +267,6 @@ export default function KeywordResearch() {
 
     if (intentOption === "informational") {
       setIsCreating(true);
-      setPhase("Fetching informational keyword ideas…");
       try {
         const keywordsInput = trimmed.split(",").map((s) => s.trim()).filter(Boolean);
         const request =
@@ -306,14 +302,12 @@ export default function KeywordResearch() {
         });
       } finally {
         setIsCreating(false);
-        setPhase(null);
       }
       return;
     }
 
     // "All intents" – job-based keyword research
     setIsCreating(true);
-    setPhase("Initiating keyword research…");
     setJobResults(null);
     setJobStatus(null);
     try {
@@ -330,14 +324,12 @@ export default function KeywordResearch() {
         progress: 0,
         created_at: new Date().toISOString(),
       });
-      setPhase("Collecting keyword data…");
       toast({
         title: "Research Started",
         description: "Keyword research job created. Results will appear when ready.",
       });
     } catch (error: any) {
       setIsCreating(false);
-      setPhase(null);
       toast({
         title: "Error",
         description: error.message || "Failed to create keyword research job",
@@ -467,14 +459,6 @@ export default function KeywordResearch() {
     return <Badge variant="outline" className="text-xs">{source}</Badge>;
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-[60vh]">
-        <PhaseLoader phase="Collecting keyword data…" size="lg" />
-      </div>
-    );
-  }
-
   return (
     <div className="p-8 space-y-6">
       <div>
@@ -596,7 +580,7 @@ export default function KeywordResearch() {
           <CardHeader>
             <CardTitle>Research Status</CardTitle>
           </CardHeader>
-          <CardContent className="flex justify-center py-10">
+          <CardContent className="flex justify-center py-10 min-h-[200px]">
             <PhaseLoader
               phase={
                 intentOption === "informational"
@@ -605,12 +589,17 @@ export default function KeywordResearch() {
                     ? `Collecting keyword data… ${jobStatus.progress}%`
                     : "Collecting keyword data…"
               }
-              size="lg"
+              size="md"
             />
           </CardContent>
         </Card>
       )}
 
+      <ContentAreaLoader
+        loading={isLoading && !isCreating}
+        phase="Loading keywords…"
+        minHeightClassName="min-h-[320px]"
+      >
       {data && data.length > 0 && (
         <>
           <Card data-testid="card-volume-chart">
@@ -702,14 +691,9 @@ export default function KeywordResearch() {
                 {paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {isCreating ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="w-6 h-6 animate-spin" />
-                          <span>Fetching informational keyword ideas…</span>
-                        </div>
-                      ) : (
-                        "No keywords found"
-                      )}
+                      {isCreating
+                        ? "Keyword list will appear here when research completes."
+                        : "No keywords found"}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -756,6 +740,7 @@ export default function KeywordResearch() {
       </Card>
         </>
       )}
+      </ContentAreaLoader>
     </div>
   );
 }

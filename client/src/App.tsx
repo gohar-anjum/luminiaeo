@@ -5,8 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/hooks/useTheme";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/hooks/useAuth";
+import { UserProtectedRoute, AdminProtectedRoute } from "@/components/ProtectedRoute";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Topbar } from "@/components/Topbar";
 import { GlobalPhaseLoader } from "@/components/GlobalPhaseLoader";
@@ -33,6 +33,8 @@ import Billing from "@/pages/Billing";
 import BillingSuccess from "@/pages/BillingSuccess";
 import BillingCancel from "@/pages/BillingCancel";
 import Settings from "@/pages/Settings";
+import AdminPanel from "@/admin/AdminPanel";
+import { parseAdminPageParam } from "@/admin/types";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const style = {
@@ -56,8 +58,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const { isAuthenticated } = useAuth();
-
   return (
     <Switch>
       {/* Public Routes */}
@@ -69,113 +69,137 @@ function Router() {
 
       {/* Protected Routes */}
       <Route path="/dashboard">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <Dashboard />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/keyword">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <KeywordResearch />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/faq">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <FAQGenerator />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/semantic">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <SemanticScore />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/content-generator">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <ContentGenerator />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/visibility">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <AIVisibility />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/clustering">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <Clustering />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/pbn">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <PBNDetector />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/meta">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <MetaOptimizer />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/projects">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <Projects />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/billing/success">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <BillingSuccess />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
       <Route path="/billing/cancel">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <BillingCancel />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
       <Route path="/billing">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <Billing />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
       </Route>
 
       <Route path="/settings">
-        <ProtectedRoute>
+        <UserProtectedRoute>
           <AuthenticatedLayout>
             <Settings />
           </AuthenticatedLayout>
-        </ProtectedRoute>
+        </UserProtectedRoute>
+      </Route>
+
+      {/* Admin Route */}
+      <Route path="/admin">
+        <AdminProtectedRoute>
+          <div className="luminia-admin">
+            <AdminPanel 
+              page="dashboard" 
+              onNavigate={(p) => window.location.href = `/admin/${p}`} 
+            />
+          </div>
+        </AdminProtectedRoute>
+      </Route>
+      <Route path="/admin/:page">
+        {(params) => (
+          <AdminProtectedRoute>
+            <div className="luminia-admin">
+              <AdminPanel 
+                page={parseAdminPageParam(params.page)} 
+                onNavigate={(p) => window.location.href = `/admin/${p}`} 
+              />
+            </div>
+          </AdminProtectedRoute>
+        )}
       </Route>
 
       {/* 404 */}

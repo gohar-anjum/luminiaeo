@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/client";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 
 export default function Settings() {
   const { user, refreshUser } = useAuth();
@@ -190,32 +191,40 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  data-testid="input-name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                  data-testid="input-email"
-                />
-              </div>
-              <Button 
-                onClick={handleSaveProfile} 
-                disabled={isSavingProfile}
-                data-testid="button-save-profile"
+              <ContentAreaLoader
+                loading={isSavingProfile}
+                phase="Saving profile…"
+                minHeightClassName="min-h-[200px]"
               >
-                {isSavingProfile ? "Saving..." : "Save Changes"}
-              </Button>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      value={profile.name}
+                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                      data-testid="input-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={profile.email}
+                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                      data-testid="input-email"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={isSavingProfile}
+                    data-testid="button-save-profile"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </ContentAreaLoader>
             </CardContent>
           </Card>
         </TabsContent>
@@ -229,47 +238,55 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  value={passwords.current}
-                  onChange={(e) =>
-                    setPasswords({ ...passwords, current: e.target.value })
-                  }
-                  data-testid="input-current-password"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={passwords.new}
-                  onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                  data-testid="input-new-password"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={passwords.confirm}
-                  onChange={(e) =>
-                    setPasswords({ ...passwords, confirm: e.target.value })
-                  }
-                  data-testid="input-confirm-password"
-                />
-              </div>
-              <Button 
-                onClick={handleChangePassword} 
-                disabled={isChangingPassword}
-                data-testid="button-change-password"
+              <ContentAreaLoader
+                loading={isChangingPassword}
+                phase="Updating password…"
+                minHeightClassName="min-h-[260px]"
               >
-                {isChangingPassword ? "Changing..." : "Change Password"}
-              </Button>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={passwords.current}
+                      onChange={(e) =>
+                        setPasswords({ ...passwords, current: e.target.value })
+                      }
+                      data-testid="input-current-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={passwords.new}
+                      onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                      data-testid="input-new-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={passwords.confirm}
+                      onChange={(e) =>
+                        setPasswords({ ...passwords, confirm: e.target.value })
+                      }
+                      data-testid="input-confirm-password"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={isChangingPassword}
+                    data-testid="button-change-password"
+                  >
+                    Change Password
+                  </Button>
+                </div>
+              </ContentAreaLoader>
             </CardContent>
           </Card>
         </TabsContent>

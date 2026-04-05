@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 import {
   Accordion,
   AccordionContent,
@@ -22,7 +22,6 @@ import {
   Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
 import { apiClient } from "@/lib/api/client";
 import type { FAQQuestion } from "@/lib/api/types";
 import { LocationSelector } from "@/components/LocationSelector";
@@ -30,7 +29,6 @@ import { useLocation } from "wouter";
 
 export default function FAQGenerator() {
   const { toast } = useToast();
-  const { setPhase } = useLoadingPhase();
   const [location] = useLocation();
   const [input, setInput] = useState("");
   const [locationCode, setLocationCode] = useState<number>(2840); // Default to US
@@ -128,7 +126,6 @@ export default function FAQGenerator() {
             pollIntervalRef.current = null;
           }
           setLoading(false);
-          setPhase(null);
           toast({
             title: "Success",
             description: `Generated ${response.total_questions ?? response.questions?.length ?? 0} FAQs successfully`,
@@ -139,7 +136,6 @@ export default function FAQGenerator() {
             pollIntervalRef.current = null;
           }
           setLoading(false);
-          setPhase(null);
           const errorMsg = response.error || "Task failed";
           setError(errorMsg);
           toast({
@@ -179,7 +175,6 @@ export default function FAQGenerator() {
           pollIntervalRef.current = null;
         }
         setLoading(false);
-        setPhase(null);
         const errorMsg = err?.message || "Failed to get task status";
         setError(errorMsg);
         toast({
@@ -191,7 +186,7 @@ export default function FAQGenerator() {
     };
 
     poll();
-  }, [toast, setPhase]);
+  }, [toast]);
 
   const handleGenerate = async () => {
     if (!input.trim()) {
@@ -211,7 +206,6 @@ export default function FAQGenerator() {
     }
 
     setLoading(true);
-    setPhase("Initiating FAQ generation…");
     setError(null);
     setQuestions([]);
     setTaskStatus("idle");
@@ -245,13 +239,11 @@ export default function FAQGenerator() {
       });
 
       // Start polling for status
-      setPhase("Generating FAQs…");
       pollTaskStatus(newTaskId).catch((pollError: any) => {
         console.error("Polling error:", pollError);
       });
     } catch (err: any) {
       setLoading(false);
-      setPhase(null);
       let errorMessage = "Failed to create FAQ task";
       
       if (err instanceof Error) {
@@ -416,13 +408,16 @@ export default function FAQGenerator() {
         </CardContent>
       </Card>
 
-      {loading && questions.length === 0 && (
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      )}
+      {loading && questions.length === 0 ? (
+        <ContentAreaLoader
+          loading
+          phase="Generating FAQs…"
+          minHeightClassName="min-h-[240px]"
+          className="rounded-lg border border-border/60"
+        >
+          <div className="min-h-[220px]" aria-hidden />
+        </ContentAreaLoader>
+      ) : null}
 
       {questions.length > 0 && (
         <Card>

@@ -3,7 +3,8 @@ import { useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Coins, Loader2 } from "lucide-react";
+import { CheckCircle2, Coins } from "lucide-react";
+import { PhaseLoader } from "@/components/PhaseLoader";
 import { confirmSession } from "@/lib/api/billing";
 
 const POLL_INTERVAL_MS = 2000;
@@ -91,13 +92,13 @@ export default function BillingSuccess() {
             Purchase complete. You can close this tab and return to your work.
           </p>
           {(status === "confirming" || status === "polling") && (
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-              <span>
-                {status === "confirming"
-                  ? "Confirming your payment…"
-                  : "Updating balance…"}
-              </span>
+            <div className="flex justify-center py-2">
+              <PhaseLoader
+                phase={
+                  status === "confirming" ? "Confirming your payment…" : "Updating balance…"
+                }
+                size="sm"
+              />
             </div>
           )}
           {displayBalance != null && (

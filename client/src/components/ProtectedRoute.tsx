@@ -3,20 +3,41 @@ import { useLocation } from "wouter";
 import { useEffect } from "react";
 import { PhaseLoader } from "@/components/PhaseLoader";
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+type ProtectedRouteProps = {
+  children: React.ReactNode;
+  /** Only admins may access (others go to `/dashboard`). */
+  requireAdmin?: boolean;
+  /** Admins are redirected to `/admin` (main app shell is for non-admins only). */
+  forbidAdmin?: boolean;
+};
+
+export function ProtectedRoute({
+  children,
+  requireAdmin,
+  forbidAdmin,
+}: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (isLoading) return;
+    if (!isAuthenticated) {
       setLocation("/login");
+      return;
     }
-  }, [isAuthenticated, isLoading, setLocation]);
+    if (requireAdmin && !user?.is_admin) {
+      setLocation("/dashboard");
+      return;
+    }
+    if (forbidAdmin && user?.is_admin) {
+      setLocation("/admin");
+    }
+  }, [isAuthenticated, isLoading, user?.is_admin, requireAdmin, forbidAdmin, setLocation]);
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-background/80 backdrop-blur-sm">
-        <PhaseLoader phase="Checking authentication…" size="lg" />
+      <div className="flex min-h-[50vh] w-full flex-1 items-center justify-center p-8">
+        <PhaseLoader phase="Checking authentication…" size="md" />
       </div>
     );
   }
@@ -25,5 +46,23 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return null;
   }
 
+  if (requireAdmin && !user?.is_admin) {
+    return null;
+  }
+
+  if (forbidAdmin && user?.is_admin) {
+    return null;
+  }
+
   return <>{children}</>;
+}
+
+/** Authenticated non-admin routes only (main product UI). */
+export function UserProtectedRoute({ children }: { children: React.ReactNode }) {
+  return <ProtectedRoute forbidAdmin>{children}</ProtectedRoute>;
+}
+
+/** Admin panel only (`user.is_admin`). */
+export function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
+  return <ProtectedRoute requireAdmin>{children}</ProtectedRoute>;
 }

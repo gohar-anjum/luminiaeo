@@ -6,13 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Link, useLocation } from "wouter";
 import { BarChart3, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
 import { apiClient } from "@/lib/api/client";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 
 export default function ResetPassword() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  const { setPhase } = useLoadingPhase();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
@@ -60,7 +59,6 @@ export default function ResetPassword() {
     }
 
     setIsLoading(true);
-    setPhase("Resetting password…");
     try {
       await apiClient.resetPassword({
         email,
@@ -90,7 +88,6 @@ export default function ResetPassword() {
       });
     } finally {
       setIsLoading(false);
-      setPhase(null);
     }
   };
 
@@ -180,67 +177,73 @@ export default function ResetPassword() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                disabled
-                data-testid="input-email"
-              />
-            </div>
+          <ContentAreaLoader
+            loading={isLoading}
+            phase="Resetting password…"
+            minHeightClassName="min-h-[280px]"
+          >
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  disabled
+                  data-testid="input-email"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter new password"
-                required
-                minLength={8}
-                data-testid="input-password"
-              />
-              <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters
-              </p>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">New Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  required
+                  minLength={8}
+                  data-testid="input-password"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Must be at least 8 characters
+                </p>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password-confirmation">Confirm Password</Label>
-              <Input
-                id="password-confirmation"
-                type="password"
-                value={passwordConfirmation}
-                onChange={(e) => setPasswordConfirmation(e.target.value)}
-                placeholder="Confirm new password"
-                required
-                minLength={8}
-                data-testid="input-password-confirmation"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="password-confirmation">Confirm Password</Label>
+                <Input
+                  id="password-confirmation"
+                  type="password"
+                  value={passwordConfirmation}
+                  onChange={(e) => setPasswordConfirmation(e.target.value)}
+                  placeholder="Confirm new password"
+                  required
+                  minLength={8}
+                  data-testid="input-password-confirmation"
+                />
+              </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading || !token || !email}
-              data-testid="button-reset"
-            >
-              {isLoading ? "Resetting..." : "Reset Password"}
-            </Button>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || !token || !email}
+                data-testid="button-reset"
+              >
+                Reset Password
+              </Button>
 
-            <div className="text-center text-sm">
-              <Link href="/login">
-                <a className="text-primary hover:underline inline-flex items-center gap-1" data-testid="link-back-to-login">
-                  <ArrowLeft className="w-3 h-3" />
-                  Back to Login
-                </a>
-              </Link>
-            </div>
-          </form>
+              <div className="text-center text-sm">
+                <Link href="/login">
+                  <a className="text-primary hover:underline inline-flex items-center gap-1" data-testid="link-back-to-login">
+                    <ArrowLeft className="w-3 h-3" />
+                    Back to Login
+                  </a>
+                </Link>
+              </div>
+            </form>
+          </ContentAreaLoader>
         </CardContent>
       </Card>
     </div>

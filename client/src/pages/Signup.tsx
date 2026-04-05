@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 
 export default function Signup() {
   const { signup } = useAuth();
@@ -93,7 +94,12 @@ export default function Signup() {
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <ContentAreaLoader
+            loading={isLoading}
+            phase="Creating your account…"
+            minHeightClassName="min-h-[420px]"
+          >
+            <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input
@@ -196,7 +202,7 @@ export default function Signup() {
               disabled={isLoading}
               data-testid="button-signup"
             >
-              {isLoading ? "Creating account..." : "Create account"}
+              Create account
             </Button>
 
             <div className="text-center text-sm text-muted-foreground">
@@ -207,7 +213,8 @@ export default function Signup() {
                 </a>
               </Link>
             </div>
-          </form>
+            </form>
+          </ContentAreaLoader>
         </CardContent>
       </Card>
     </div>

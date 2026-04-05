@@ -23,6 +23,7 @@ import {
   type BillingApiError,
 } from "@/lib/api/billing";
 import { Coins, Loader2, CreditCard, Minus, Plus } from "lucide-react";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 
 export default function Billing() {
   const [, setLocation] = useLocation();
@@ -121,14 +122,6 @@ export default function Billing() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-[200px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
   const maxCredits = purchaseRules?.max_credits ?? 10000;
   const priceUsd =
     purchaseRules && selectedCredits != null
@@ -144,6 +137,7 @@ export default function Billing() {
         </p>
       </div>
 
+      <ContentAreaLoader loading={loading} phase="Loading billing…" minHeightClassName="min-h-[320px]">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card data-testid="card-credit-balance">
           <CardHeader>
@@ -277,6 +271,7 @@ export default function Billing() {
           </CardContent>
         </Card>
       )}
+      </ContentAreaLoader>
     </div>
   );
 }

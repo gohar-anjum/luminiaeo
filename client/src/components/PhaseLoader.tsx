@@ -13,40 +13,31 @@ const sizeClasses = {
 };
 
 const textSizeClasses = {
-  sm: "text-[10px]",
-  md: "text-xs",
-  lg: "text-sm",
+  sm: "text-xs",
+  md: "text-sm",
+  lg: "text-base",
 };
 
+/** Circular ring + single caption (for global and inline loading). */
 export function PhaseLoader({ phase = "Loading…", className, size = "md" }: PhaseLoaderProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-4", className)}>
-      <div className={cn("relative flex items-center justify-center", sizeClasses[size])}>
-        {/* Rotating ring */}
-        <div
-          className="absolute inset-0 rounded-full border-2 border-primary/30"
-          aria-hidden
-        />
+    <div className={cn("flex flex-col items-center justify-center gap-3", className)}>
+      <div className={cn("relative flex items-center justify-center", sizeClasses[size])} aria-hidden>
+        <div className={cn("absolute inset-0 rounded-full border-2 border-primary/30", sizeClasses[size])} />
         <div
           className={cn(
             "absolute inset-0 rounded-full border-2 border-transparent border-t-primary border-r-primary/60",
             "animate-[spin_0.9s_linear_infinite]",
             sizeClasses[size]
           )}
-          aria-hidden
         />
-        {/* Phase text inside the circle */}
-        <div
-          className={cn(
-            "relative z-10 max-w-[70%] text-center font-medium text-foreground/90",
-            textSizeClasses[size]
-          )}
-        >
-          <span className="line-clamp-2 break-words">{phase}</span>
-        </div>
       </div>
-      {/* Optional label below */}
-      <p className="text-muted-foreground text-sm max-w-[200px] text-center truncate" title={phase}>
+      <p
+        className={cn(
+          "text-muted-foreground text-center font-medium max-w-[260px] px-2",
+          textSizeClasses[size]
+        )}
+      >
         {phase}
       </p>
     </div>

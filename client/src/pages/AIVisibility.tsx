@@ -16,7 +16,6 @@ import {
 import { Search, CheckCircle2, XCircle, RefreshCw, AlertCircle } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useToast } from "@/hooks/use-toast";
-import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
 import { apiClient, pollCitationStatus, handleApiError } from "@/lib/api";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
@@ -111,7 +110,6 @@ interface CitationResult {
 
 export default function AIVisibility() {
   const { toast } = useToast();
-  const { setPhase } = useLoadingPhase();
   const [url, setUrl] = useState("");
   const [taskId, setTaskId] = useState<number | null>(null);
   const [taskStatus, setTaskStatus] = useState<CitationTaskStatus | null>(null);
@@ -164,14 +162,12 @@ export default function AIVisibility() {
       };
       setResults(mappedResults);
       setIsAnalyzing(false);
-      setPhase(null);
       toast({
         title: "Analysis Complete",
         description: "Citation analysis completed successfully.",
       });
     } catch (error: any) {
       setIsAnalyzing(false);
-      setPhase(null);
       const { message } = handleApiError(error);
       toast({
         title: "Error",
@@ -179,13 +175,12 @@ export default function AIVisibility() {
         variant: "destructive",
       });
     }
-  }, [toast, setPhase]);
+  }, [toast]);
 
   const startPolling = useCallback((taskId: number) => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
     }
-    setPhase("Analyzing citations…");
     pollingStartTimeRef.current = Date.now();
     
     const poll = async () => {
@@ -195,7 +190,6 @@ export default function AIVisibility() {
           pollingIntervalRef.current = null;
         }
         setIsAnalyzing(false);
-        setPhase(null);
         toast({
           title: "Timeout",
           description: "Analysis took too long. Please try again.",
@@ -231,7 +225,6 @@ export default function AIVisibility() {
             pollingIntervalRef.current = null;
           }
           setIsAnalyzing(false);
-          setPhase(null);
           const mappedStatusFailed: CitationTaskStatus = {
             task_id: status.task_id,
             status: status.status as any,
@@ -256,7 +249,6 @@ export default function AIVisibility() {
           pollingIntervalRef.current = null;
         }
         setIsAnalyzing(false);
-        setPhase(null);
         const { message } = handleApiError(error);
         toast({
           title: "Error",
@@ -268,7 +260,7 @@ export default function AIVisibility() {
 
     poll();
     pollingIntervalRef.current = setInterval(poll, 5000);
-  }, [toast, maxPollingTime, fetchAndSetResults, setPhase]);
+  }, [toast, maxPollingTime, fetchAndSetResults]);
 
   const handleAnalyze = async () => {
     if (!url) {
@@ -314,7 +306,6 @@ export default function AIVisibility() {
       }
     } catch (error: any) {
       setIsAnalyzing(false);
-      setPhase(null);
       const { message } = handleApiError(error);
       toast({
         title: "Error",
@@ -328,7 +319,6 @@ export default function AIVisibility() {
     if (!taskId) return;
 
     setIsRetrying(true);
-    setPhase("Retrying citation analysis…");
     try {
       await apiClient.retryCitationAnalysis(taskId);
       toast({
@@ -337,7 +327,6 @@ export default function AIVisibility() {
       });
       startPolling(taskId);
     } catch (error: any) {
-      setPhase(null);
       const { message } = handleApiError(error);
       toast({
         title: "Error",
@@ -346,7 +335,6 @@ export default function AIVisibility() {
       });
     } finally {
       setIsRetrying(false);
-      setPhase(null);
     }
   };
 
@@ -498,8 +486,8 @@ export default function AIVisibility() {
           <CardHeader>
             <CardTitle>Analysis Progress</CardTitle>
           </CardHeader>
-          <CardContent className="flex justify-center py-10">
-            <PhaseLoader phase="Initiating citation analysis…" size="lg" />
+          <CardContent className="flex justify-center py-10 min-h-[200px]">
+            <PhaseLoader phase="Initiating citation analysis…" size="md" />
           </CardContent>
         </Card>
       )}

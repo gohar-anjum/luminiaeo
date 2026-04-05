@@ -6,13 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Link, useLocation } from "wouter";
 import { BarChart3, ArrowLeft, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useLoadingPhase } from "@/contexts/LoadingPhaseContext";
 import { apiClient } from "@/lib/api/client";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 
 export default function ForgotPassword() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { setPhase } = useLoadingPhase();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -30,7 +29,6 @@ export default function ForgotPassword() {
     }
 
     setIsLoading(true);
-    setPhase("Sending reset link…");
     try {
       await apiClient.forgotPassword({ email: email.trim() });
       setIsSuccess(true);
@@ -47,7 +45,6 @@ export default function ForgotPassword() {
       });
     } finally {
       setIsLoading(false);
-      setPhase(null);
     }
   };
 
@@ -108,38 +105,44 @@ export default function ForgotPassword() {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  required
-                  data-testid="input-email"
-                />
-              </div>
+            <ContentAreaLoader
+              loading={isLoading}
+              phase="Sending reset link…"
+              minHeightClassName="min-h-[200px]"
+            >
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    required
+                    data-testid="input-email"
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-                data-testid="button-submit"
-              >
-                {isLoading ? "Sending..." : "Send Reset Link"}
-              </Button>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading}
+                  data-testid="button-submit"
+                >
+                  Send Reset Link
+                </Button>
 
-              <div className="text-center text-sm">
-                <Link href="/login">
-                  <a className="text-primary hover:underline inline-flex items-center gap-1" data-testid="link-back-to-login">
-                    <ArrowLeft className="w-3 h-3" />
-                    Back to Login
-                  </a>
-                </Link>
-              </div>
-            </form>
+                <div className="text-center text-sm">
+                  <Link href="/login">
+                    <a className="text-primary hover:underline inline-flex items-center gap-1" data-testid="link-back-to-login">
+                      <ArrowLeft className="w-3 h-3" />
+                      Back to Login
+                    </a>
+                  </Link>
+                </div>
+              </form>
+            </ContentAreaLoader>
           )}
         </CardContent>
       </Card>

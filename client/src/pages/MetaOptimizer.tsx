@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -277,17 +277,11 @@ export default function MetaOptimizer() {
             </CardContent>
           </Card>
 
-          {isScanning && (
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-48" />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Skeleton className="h-64" />
-                <Skeleton className="h-64" />
-              </div>
-              <Skeleton className="h-32" />
-            </div>
-          )}
-
+          <ContentAreaLoader
+            loading={isScanning}
+            phase="Analyzing page meta tags…"
+            minHeightClassName="min-h-[320px]"
+          >
           {results && !isScanning && (
             <>
               {/* Status badges row */}
@@ -462,18 +456,16 @@ export default function MetaOptimizer() {
               </Card>
             </>
           )}
+          </ContentAreaLoader>
         </TabsContent>
 
         {/* History Tab */}
         <TabsContent value="history" className="space-y-4 mt-4">
-          {isLoadingHistory && (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12" />
-              ))}
-            </div>
-          )}
-
+          <ContentAreaLoader
+            loading={isLoadingHistory}
+            phase="Loading optimization history…"
+            minHeightClassName="min-h-[200px]"
+          >
           {history && !isLoadingHistory && (
             <>
               {history.data.length === 0 ? (
@@ -618,6 +610,7 @@ export default function MetaOptimizer() {
               )}
             </>
           )}
+          </ContentAreaLoader>
         </TabsContent>
       </Tabs>
     </div>
