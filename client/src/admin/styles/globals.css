@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+.luminia-admin {
+  --bg:        #0b0d10;
+  --surface:   #12151a;
+  --card:      #181c23;
+  --border:    #252a35;
+  --border2:   #2e3545;
+  --text:      #e2e6ef;
+  --muted:     #7a8299;
+  --accent:    #5b7fff;
+  --accent2:   #a78bfa;
+  --green:     #34d399;
+  --amber:     #fbbf24;
+  --red:       #f87171;
+  --pink:      #f472b6;
+  --teal:      #2dd4bf;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --r:         8px;
+  --r-lg:      12px;
+  --sidebar:   220px;
+}
+
+/* We're letting the main app's css reset handle the base box-sizing */
+
+.luminia-admin {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* Scrollbar */
+.luminia-admin ::-webkit-scrollbar { width: 5px; height: 5px; }
+.luminia-admin ::-webkit-scrollbar-track { background: transparent; }
+.luminia-admin ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 20px; }
+
+/* Table base */
+.luminia-admin table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.luminia-admin thead th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  background: var(--surface);
+}
+
+.luminia-admin tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.luminia-admin tbody tr:last-child { border-bottom: none; }
+.luminia-admin tbody tr:hover { background: rgba(255,255,255,0.03); }
+.luminia-admin td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
