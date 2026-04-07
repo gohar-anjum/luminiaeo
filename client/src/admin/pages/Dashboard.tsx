@@ -32,7 +32,6 @@ const Dashboard: React.FC = () => {
       { label: 'Total backlinks', value: fmt(s.total_backlinks), delta: `+${fmt(s.new_backlinks_today)} today`, deltaDir: 'up', color: 'var(--green)' },
       { label: 'API calls today', value: fmt(s.api_calls_today), delta: `Cache hit ${hitPct}`, deltaDir: 'neutral', color: 'var(--amber)' },
       { label: 'Credits sold (total)', value: fmt(s.total_credits_sold), delta: `${fmt(s.credits_used_today)} used today`, deltaDir: 'neutral', color: 'var(--accent2)' },
-      { label: 'Active subscriptions', value: fmt(s.active_subscriptions), delta: 'Stripe / Cashier', deltaDir: 'neutral', color: 'var(--teal)' },
     ];
   }, [statsQ.data]);
 

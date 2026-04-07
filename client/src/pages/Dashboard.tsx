@@ -25,6 +25,10 @@ const FEATURE_LABELS: Record<string, string> = {
   faq_generator: "FAQ Generator",
   citation_feature: "Citation / AI Visibility",
   backlink_feature: "Backlinks / PBN",
+  keyword_clustering: "Keyword Clustering",
+  semantic_score_checker: "Semantic Score Checker",
+  semantic_content_generator: "Semantic Content Generator",
+  meta_tag_optimizer: "Meta Tag Optimizer",
 };
 
 function getFeatureLabel(featureKey: string): string {
