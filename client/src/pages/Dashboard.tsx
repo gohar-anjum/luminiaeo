@@ -1,4 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FeatureHero } from "@/components/FeatureHero";
+import { DASHBOARD_HERO } from "@/config/featureHeroConfigs";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 import {
   Table,
@@ -10,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { formatRelativeTime } from "@/utils/formatters";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { registerMockData } from "@/lib/queryClient";
 import dashboardData from "@/data/dashboard.json";
 import { useEffect } from "react";
@@ -47,6 +49,8 @@ function getTransactionTypeLabel(type: CreditTransactionType): string {
 }
 
 export default function Dashboard() {
+  const [, setLocation] = useLocation();
+
   // Register mock data for this endpoint
   useEffect(() => {
     registerMockData("/api/dashboard", async () => dashboardData);
@@ -93,12 +97,10 @@ export default function Dashboard() {
 
   return (
     <div className="p-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Overview of your AI optimization performance
-        </p>
-      </div>
+      <FeatureHero
+        {...DASHBOARD_HERO}
+        onCtaClick={() => setLocation("/keyword")}
+      />
 
       {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Queries Analyzed */}

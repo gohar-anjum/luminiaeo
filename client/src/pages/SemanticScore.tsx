@@ -32,6 +32,8 @@ import type {
   PaginatedResponse,
 } from "@/lib/api/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { FeatureHero } from "@/components/FeatureHero";
+import { SEMANTIC_SCORE_HERO } from "@/config/featureHeroConfigs";
 
 const CREDIT_COST = 1;
 
@@ -271,12 +273,16 @@ export default function SemanticScore() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Semantic Score Checker</h1>
-        <p className="text-muted-foreground">
-          Evaluate how semantically relevant your page's content is for a target keyword
-        </p>
-      </div>
+      <FeatureHero
+        {...SEMANTIC_SCORE_HERO}
+        inputValue={url}
+        onInputChange={(v) => {
+          setUrl(v);
+          if (urlError) setUrlError(null);
+        }}
+        onCtaClick={handleAnalyze}
+        ctaDisabled={isAnalyzing || !url.trim()}
+      />
 
       <Tabs
         defaultValue="analyze"
@@ -292,22 +298,9 @@ export default function SemanticScore() {
         <TabsContent value="analyze" className="space-y-6 mt-4">
           <Card data-testid="card-analyze">
             <CardContent className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="url">Page URL</Label>
-                <Input
-                  id="url"
-                  placeholder="https://example.com/your-page"
-                  value={url}
-                  onChange={(e) => {
-                    setUrl(e.target.value);
-                    if (urlError) setUrlError(null);
-                  }}
-                  data-testid="input-url"
-                />
-                {urlError && (
-                  <p className="text-xs text-destructive">{urlError}</p>
-                )}
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Enter the page URL in the banner above, then optionally narrow the analysis with a focus keyword.
+              </p>
               <div className="space-y-2">
                 <Label htmlFor="keyword">Focus Keyword</Label>
                 <Input
@@ -318,28 +311,11 @@ export default function SemanticScore() {
                   data-testid="input-keyword"
                 />
               </div>
-              <Button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing}
-                className="w-full"
-                data-testid="button-analyze"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Computing semantic embeddings...
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-4 h-4 mr-2" />
-                    Analyze
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      <Coins className="w-3 h-3 mr-1" />
-                      {CREDIT_COST} credit
-                    </Badge>
-                  </>
-                )}
-              </Button>
+              {urlError && <p className="text-xs text-destructive">{urlError}</p>}
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Coins className="w-3 h-3" />
+                Each run uses {CREDIT_COST} credit — click &quot;Analyze Page&quot; in the banner to start.
+              </p>
             </CardContent>
           </Card>
 

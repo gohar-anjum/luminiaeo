@@ -14,6 +14,8 @@ import {
 import { Download, Network, AlertTriangle, Loader2 } from "lucide-react";
 import { PhaseLoader } from "@/components/PhaseLoader";
 import * as d3 from "d3";
+import { FeatureHero } from "@/components/FeatureHero";
+import { CLUSTERING_HERO } from "@/config/featureHeroConfigs";
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
@@ -559,44 +561,24 @@ export default function Clustering() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Keyword Clustering</h1>
-        <p className="text-muted-foreground">
-          Build a hierarchical keyword tree from a seed (Laravel API). Branches
-          show themes; leaves show more specific queries with intent labels.
-        </p>
-      </div>
+      <FeatureHero
+        {...CLUSTERING_HERO}
+        inputValue={keyword}
+        onInputChange={setKeyword}
+        onCtaClick={handleGenerate}
+        ctaDisabled={busy || !keyword.trim()}
+      />
 
       <Card data-testid="card-generate">
         <CardContent className="p-6">
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="keyword">Seed keyword</Label>
-              <div className="flex flex-wrap gap-2">
-                <Input
-                  id="keyword"
-                  placeholder="e.g. content marketing"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  disabled={busy}
-                  className="max-w-md flex-1 min-w-[200px]"
-                  data-testid="input-keyword"
-                />
-                <Button
-                  onClick={handleGenerate}
-                  disabled={busy}
-                  data-testid="button-generate"
-                >
-                  <Network className="w-4 h-4 mr-2" />
-                  {busy ? statusLabel(phase) : "Generate cluster"}
-                </Button>
-              </div>
-              {fieldErrors?.keyword?.length ? (
-                <p className="text-sm text-destructive">
-                  {fieldErrors.keyword.join(" ")}
-                </p>
-              ) : null}
-            </div>
+            {fieldErrors?.keyword?.length ? (
+              <p className="text-sm text-destructive">{fieldErrors.keyword.join(" ")}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Enter a seed keyword in the banner above, then use &quot;Build Cluster&quot; to generate the tree.
+              </p>
+            )}
             {errorMessage && phase === "failed" ? (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />

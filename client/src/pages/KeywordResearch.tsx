@@ -38,6 +38,8 @@ import type {
   KeywordResearchResults,
 } from "@/lib/api/types";
 import { LocationSelector } from "@/components/LocationSelector";
+import { FeatureHero } from "@/components/FeatureHero";
+import { KEYWORD_RESEARCH_HERO } from "@/config/featureHeroConfigs";
 import { useLocation } from "wouter";
 
 type Keyword = {
@@ -461,67 +463,34 @@ export default function KeywordResearch() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Keyword Research</h1>
-        <p className="text-muted-foreground">
-          Discover high-impact keywords optimized for AI search engines
-        </p>
-      </div>
+      <FeatureHero
+        {...KEYWORD_RESEARCH_HERO}
+        inputValue={query}
+        onInputChange={setQuery}
+        onCtaClick={handleSearch}
+        ctaDisabled={isCreating || !query.trim()}
+      />
 
-      {/* Query Input */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Enter keyword or topic to research..."
-                  className="pl-10"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !isCreating) {
-                      handleSearch();
-                    }
-                  }}
-                  disabled={isCreating}
-                  data-testid="input-query"
-                />
-              </div>
-              <div className="flex sm:w-[200px] w-full">
-                <Select
-                  value={intentOption}
-                  onValueChange={(v) => setIntentOption(v as "informational" | "all")}
-                  disabled={isCreating}
-                >
-                  <SelectTrigger aria-label="Keyword intent">
-                    <SelectValue placeholder="Intent" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="informational">Informational</SelectItem>
-                    <SelectItem value="all">All intents</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button 
-                onClick={handleSearch} 
-                disabled={isCreating || !query.trim()}
-                data-testid="button-search"
-                className="sm:w-auto w-full"
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground max-w-xl">
+              Choose whether to focus on informational intent or all intents, then run your search from the field above.
+            </p>
+            <div className="flex w-full sm:w-[220px] shrink-0">
+              <Select
+                value={intentOption}
+                onValueChange={(v) => setIntentOption(v as "informational" | "all")}
+                disabled={isCreating}
               >
-                {isCreating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-4 h-4 mr-2" />
-                    Search
-                  </>
-                )}
-              </Button>
+                <SelectTrigger aria-label="Keyword intent">
+                  <SelectValue placeholder="Intent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="informational">Informational</SelectItem>
+                  <SelectItem value="all">All intents</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>

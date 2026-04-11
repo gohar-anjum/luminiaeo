@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/client";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
+import { FeatureHero } from "@/components/FeatureHero";
+import { SETTINGS_HERO } from "@/config/featureHeroConfigs";
 
 export default function Settings() {
   const { user, refreshUser } = useAuth();
@@ -162,12 +164,7 @@ export default function Settings() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account settings and preferences
-        </p>
-      </div>
+      <FeatureHero {...SETTINGS_HERO} />
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList data-testid="tabs-settings">

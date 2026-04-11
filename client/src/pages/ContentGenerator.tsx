@@ -43,6 +43,8 @@ import type {
   PaginatedResponse,
 } from "@/lib/api/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { FeatureHero } from "@/components/FeatureHero";
+import { CONTENT_GENERATOR_HERO } from "@/config/featureHeroConfigs";
 
 const CREDIT_COST = 4;
 
@@ -315,12 +317,13 @@ export default function ContentGenerator() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Semantic Content Generator</h1>
-        <p className="text-muted-foreground">
-          Generate AI-powered, semantically optimized content outlines for any keyword
-        </p>
-      </div>
+      <FeatureHero
+        {...CONTENT_GENERATOR_HERO}
+        inputValue={keyword}
+        onInputChange={setKeyword}
+        onCtaClick={handleGenerate}
+        ctaDisabled={isGenerating || !keyword.trim()}
+      />
 
       <Tabs
         defaultValue="generate"
@@ -336,19 +339,9 @@ export default function ContentGenerator() {
         <TabsContent value="generate" className="space-y-6 mt-4">
           <Card data-testid="card-generator">
             <CardContent className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="keyword" className="text-base font-medium">
-                  Target Keyword
-                </Label>
-                <Input
-                  id="keyword"
-                  placeholder="e.g. remote work productivity tips"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  className="text-base h-11"
-                  data-testid="input-keyword"
-                />
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Enter your keyword in the banner above, pick a tone below, then run &quot;Generate Outline&quot; from the banner.
+              </p>
 
               <div className="space-y-2">
                 <Label className="text-sm">Tone</Label>
@@ -371,28 +364,10 @@ export default function ContentGenerator() {
                 </div>
               </div>
 
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="w-full"
-                data-testid="button-generate"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating outline...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Outline
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      <Coins className="w-3 h-3 mr-1" />
-                      {CREDIT_COST} credits
-                    </Badge>
-                  </>
-                )}
-              </Button>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Coins className="w-3 h-3" />
+                Each outline uses {CREDIT_COST} credits.
+              </p>
             </CardContent>
           </Card>
 

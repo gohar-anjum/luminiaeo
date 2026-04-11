@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
+import { FeatureHero } from "@/components/FeatureHero";
+import { PBN_DETECTOR_HERO } from "@/config/featureHeroConfigs";
 
 export default function PBNDetector() {
   const { toast } = useToast();
@@ -304,41 +306,17 @@ export default function PBNDetector() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">PBN Detector</h1>
-        <p className="text-muted-foreground">
-          Identify potentially harmful private blog networks in your backlink profile
-        </p>
-      </div>
+      <FeatureHero
+        {...PBN_DETECTOR_HERO}
+        inputValue={domain}
+        onInputChange={setDomain}
+        onCtaClick={handleAnalyze}
+        ctaDisabled={isAnalyzing || !domain.trim()}
+      />
 
-      <Card data-testid="card-analyze">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="domain">Domain</Label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  id="domain"
-                  placeholder="example.com"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  data-testid="input-domain"
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing}
-                  data-testid="button-analyze"
-                  className="sm:w-auto w-full"
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  {isAnalyzing ? "Analyzing..." : "Analyze"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <p className="text-sm text-muted-foreground max-w-2xl">
+        Enter a root domain in the banner above, then run the analysis. Large profiles can take a few minutes.
+      </p>
 
       {(isAnalyzing || (taskStatus && taskStatus !== "completed")) && (
         <Card>

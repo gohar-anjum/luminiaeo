@@ -61,9 +61,8 @@ const menuGroups = [
     ],
   },
   {
-    label: "Project / Settings",
+    label: "Settings",
     items: [
-      { title: "Projects", url: "/projects", icon: FolderKanban },
       { title: "Billing", url: "/billing", icon: CreditCard },
       { title: "Settings", url: "/settings", icon: Settings },
     ],

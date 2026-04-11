@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import { Search, CheckCircle2, XCircle, RefreshCw, AlertCircle } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { FeatureHero } from "@/components/FeatureHero";
+import { AI_VISIBILITY_HERO } from "@/config/featureHeroConfigs";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, pollCitationStatus, handleApiError } from "@/lib/api";
 import { usePagination } from "@/hooks/usePagination";
@@ -406,45 +408,18 @@ export default function AIVisibility() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">AI Indexability & Citations</h1>
-        <p className="text-muted-foreground">
-          Track your visibility across AI search platforms
-        </p>
-      </div>
+      <FeatureHero
+        {...AI_VISIBILITY_HERO}
+        inputValue={url}
+        onInputChange={setUrl}
+        onCtaClick={handleAnalyze}
+        ctaDisabled={isAnalyzing || !url.trim()}
+      />
 
-      <Card data-testid="card-analyze">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="url">Domain URL</Label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  id="url"
-                  placeholder="https://example.com"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  data-testid="input-url"
-                  disabled={isAnalyzing}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing}
-                  data-testid="button-analyze"
-                  className="sm:w-auto w-full"
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  {isAnalyzing ? "Analyzing..." : "Analyze Citations"}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                The system will generate hot topic questions and check if your domain is cited in GPT and Gemini responses.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <p className="text-sm text-muted-foreground max-w-2xl">
+        The system will generate hot topic questions and check if your domain is cited in GPT and Gemini responses. Use
+        the banner above to start an analysis.
+      </p>
 
       {isAnalyzing && taskStatus && (
         <Card>

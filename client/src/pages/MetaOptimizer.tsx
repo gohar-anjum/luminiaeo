@@ -26,6 +26,8 @@ import {
   RefreshCw,
   Loader2,
 } from "lucide-react";
+import { FeatureHero } from "@/components/FeatureHero";
+import { META_OPTIMIZER_HERO } from "@/config/featureHeroConfigs";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, handleApiError, validateUrl, normalizeUrl } from "@/lib/api";
 import { ApiError } from "@/lib/api/client";
@@ -201,12 +203,16 @@ export default function MetaOptimizer() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Meta Tag Optimizer</h1>
-        <p className="text-muted-foreground">
-          Analyze and optimize your page's meta tags for better SEO and click-through rates
-        </p>
-      </div>
+      <FeatureHero
+        {...META_OPTIMIZER_HERO}
+        inputValue={url}
+        onInputChange={(v) => {
+          setUrl(v);
+          if (urlError) setUrlError(null);
+        }}
+        onCtaClick={handleScan}
+        ctaDisabled={isScanning || !url.trim()}
+      />
 
       <Tabs
         defaultValue="optimize"
@@ -223,22 +229,9 @@ export default function MetaOptimizer() {
         <TabsContent value="optimize" className="space-y-6 mt-4">
           <Card data-testid="card-scan">
             <CardContent className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="url">Page URL</Label>
-                <Input
-                  id="url"
-                  placeholder="https://example.com/your-page"
-                  value={url}
-                  onChange={(e) => {
-                    setUrl(e.target.value);
-                    if (urlError) setUrlError(null);
-                  }}
-                  data-testid="input-url"
-                />
-                {urlError && (
-                  <p className="text-xs text-destructive">{urlError}</p>
-                )}
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Paste the page URL in the banner above, then add an optional target keyword for sharper suggestions.
+              </p>
               <div className="space-y-2">
                 <Label htmlFor="keyword">Target Keyword</Label>
                 <Input
@@ -252,28 +245,11 @@ export default function MetaOptimizer() {
                   Optional but recommended for more accurate optimization
                 </p>
               </div>
-              <Button
-                onClick={handleScan}
-                disabled={isScanning}
-                className="w-full"
-                data-testid="button-optimize"
-              >
-                {isScanning ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing page content...
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-4 h-4 mr-2" />
-                    Optimize
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      <Coins className="w-3 h-3 mr-1" />
-                      {CREDIT_COST} credits
-                    </Badge>
-                  </>
-                )}
-              </Button>
+              {urlError && <p className="text-xs text-destructive">{urlError}</p>}
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Coins className="w-3 h-3" />
+                Each optimization uses {CREDIT_COST} credits — use &quot;Optimize Tags&quot; in the banner.
+              </p>
             </CardContent>
           </Card>
 

@@ -25,6 +25,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
 import type { FAQQuestion } from "@/lib/api/types";
 import { LocationSelector } from "@/components/LocationSelector";
+import { FeatureHero } from "@/components/FeatureHero";
+import { FAQ_GENERATOR_HERO } from "@/config/featureHeroConfigs";
 import { useLocation } from "wouter";
 
 export default function FAQGenerator() {
@@ -334,17 +336,21 @@ export default function FAQGenerator() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">FAQ Generator</h1>
-        <p className="text-muted-foreground">
-          Generate high-quality, SEO-optimized FAQs based on a URL or topic
-        </p>
-      </div>
+      <FeatureHero
+        {...FAQ_GENERATOR_HERO}
+        inputValue={input}
+        onInputChange={(v) => {
+          setInput(v);
+          setError(null);
+        }}
+        onCtaClick={handleGenerate}
+        ctaDisabled={loading || !isInputValid}
+      />
 
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-4 max-w-xl">
               <LocationSelector
                 value={locationCode}
                 onChange={setLocationCode}
@@ -352,38 +358,9 @@ export default function FAQGenerator() {
                 showSearch={true}
                 disabled={loading}
               />
-              <div className="space-y-2">
-                <Label htmlFor="faq-input">URL or Topic</Label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Input
-                    id="faq-input"
-                    type="text"
-                    value={input}
-                    onChange={(e) => {
-                      setInput(e.target.value);
-                      setError(null);
-                    }}
-                    placeholder="Enter a URL (e.g., https://example.com) or topic (e.g., digital marketing)"
-                    maxLength={2048}
-                    disabled={loading}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey && isInputValid && !loading) {
-                        e.preventDefault();
-                        handleGenerate();
-                      }
-                    }}
-                  />
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={loading || !isInputValid}
-                    data-testid="button-generate"
-                    className="sm:w-auto w-full"
-                  >
-                    <Search className="w-4 h-4 mr-2" />
-                    {loading ? "Generating..." : "Generate FAQs"}
-                  </Button>
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Set your URL or topic in the banner above, then pick the market you want FAQs tailored for.
+              </p>
             </div>
 
             {/* Progress Bar */}
