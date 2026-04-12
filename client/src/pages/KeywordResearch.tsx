@@ -27,7 +27,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recha
 import { useToast } from "@/hooks/use-toast";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
 import { registerMockData } from "@/lib/queryClient";
-import keywordsData from "@/data/keywords.json";
+// import keywordsData from "@/data/keywords.json";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
 import { apiClient } from "@/lib/api/client";
@@ -80,9 +80,9 @@ export default function KeywordResearch() {
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
 
   // Register mock data for this endpoint (fallback when no search has been run)
-  useEffect(() => {
-    registerMockData("/api/keywords", async () => keywordsData);
-  }, []);
+  // useEffect(() => {
+  //   registerMockData("/api/keywords", async () => keywordsData);
+  // }, []);
 
   const { data: mockData, isLoading: isLoadingMock } = useQuery<Keyword[]>({
     queryKey: ["/api/keywords"],
