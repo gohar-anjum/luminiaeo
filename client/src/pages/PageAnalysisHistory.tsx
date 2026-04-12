@@ -254,11 +254,11 @@ export default function PageAnalysisHistory() {
             <span className="text-xs font-medium uppercase tracking-wide">Page analysis</span>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Analysis history</h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          {/* <p className="text-sm text-muted-foreground max-w-2xl">
             Paginated records from the page-analysis APIs: semantic scoring, meta tag runs, and content outlines.
             Other tools (AI visibility, FAQ jobs, keyword clustering, PBN) use different endpoints and do not appear
             here yet.
-          </p>
+          </p> */}
         </div>
         <div className="flex flex-wrap gap-2 shrink-0">
           <Button variant="outline" size="sm" asChild>
@@ -282,7 +282,7 @@ export default function PageAnalysisHistory() {
         </div>
       </div>
 
-      <Card className="border-dashed">
+      {/* <Card className="border-dashed">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">API coverage</CardTitle>
           <CardDescription>
@@ -292,7 +292,7 @@ export default function PageAnalysisHistory() {
             list page.
           </CardDescription>
         </CardHeader>
-      </Card>
+      </Card> */}
 
       <Tabs value={tab} onValueChange={(v) => setTabAndUrl(v as ToolTab)}>
         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
