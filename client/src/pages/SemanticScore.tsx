@@ -1,33 +1,13 @@
-import { useState, useCallback } from "react";
-import { Link } from "wouter";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-} from "lucide-react";
+import { Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, handleApiError, validateUrl, normalizeUrl } from "@/lib/api";
 import { ApiError } from "@/lib/api/client";
-import type {
-  SemanticScoreResponse,
-  SemanticScoreHistoryItem,
-  KeywordScore,
-  PaginatedResponse,
-} from "@/lib/api/types";
+import type { SemanticScoreResponse, KeywordScore } from "@/lib/api/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { FeatureHero } from "@/components/FeatureHero";
 import { SEMANTIC_SCORE_HERO } from "@/config/featureHeroConfigs";
@@ -183,12 +163,6 @@ export default function SemanticScore() {
   const [results, setResults] = useState<SemanticScoreResponse | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
 
-  // History
-  const [history, setHistory] = useState<PaginatedResponse<SemanticScoreHistoryItem> | null>(null);
-  const [historyPage, setHistoryPage] = useState(1);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [expandedRow, setExpandedRow] = useState<number | null>(null);
-
   const handleAnalyze = async () => {
     const trimmed = url.trim();
 
@@ -251,23 +225,6 @@ export default function SemanticScore() {
     }
   };
 
-  const loadHistory = useCallback(
-    async (page: number) => {
-      setIsLoadingHistory(true);
-      try {
-        const data = await apiClient.getSemanticScoreHistory(page, 10);
-        setHistory(data);
-        setHistoryPage(page);
-      } catch (error: any) {
-        const { message } = handleApiError(error);
-        toast({ title: "Error loading history", description: message, variant: "destructive" });
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    },
-    [toast]
-  );
-
   return (
     <div className="p-8 space-y-6">
       <FeatureHero
@@ -285,18 +242,7 @@ export default function SemanticScore() {
         onSecondaryInputChange={setKeyword}
       />
 
-      <Tabs
-        defaultValue="analyze"
-        onValueChange={(v) => {
-          if (v === "history" && !history) loadHistory(1);
-        }}
-      >
-        <TabsList>
-          <TabsTrigger value="analyze">Analyze</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="analyze" className="space-y-6 mt-4">
+      <div className="space-y-6 mt-4">
           {urlError && (
             <p className="text-sm text-destructive" data-testid="text-url-error">
               {urlError}
@@ -379,133 +325,7 @@ export default function SemanticScore() {
             </>
           )}
           </ContentAreaLoader>
-        </TabsContent>
-
-        {/* History Tab */}
-        <TabsContent value="history" className="space-y-4 mt-4">
-          <p className="text-sm text-muted-foreground">
-            For a bookmarkable view with the same API data, open{" "}
-            <Link
-              href="/page-analysis/history?tool=semantic"
-              className="text-primary font-medium underline-offset-2 hover:underline"
-            >
-              Analysis history → Semantic
-            </Link>
-            .
-          </p>
-          <ContentAreaLoader
-            loading={isLoadingHistory}
-            phase="Loading analysis history…"
-            minHeightClassName="min-h-[200px]"
-          >
-          {history && !isLoadingHistory && (
-            <>
-              {history.data.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center text-muted-foreground">
-                    No analysis history yet.
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="p-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>URL</TableHead>
-                          <TableHead>Keyword</TableHead>
-                          <TableHead>Score</TableHead>
-                          <TableHead>Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {history.data.map((item, idx) => {
-                          const pct = Math.round(item.semantic_score * 100);
-                          return (
-                            <>
-                              <TableRow
-                                key={idx}
-                                className="cursor-pointer"
-                                onClick={() =>
-                                  setExpandedRow(expandedRow === idx ? null : idx)
-                                }
-                              >
-                                <TableCell className="max-w-[220px] truncate text-sm">
-                                  {item.source_url}
-                                </TableCell>
-                                <TableCell className="text-sm">
-                                  {item.target_keyword || item.comparison_value || "—"}
-                                </TableCell>
-                                <TableCell>
-                                  <span
-                                    className={`text-sm font-semibold ${scoreColor(item.semantic_score)}`}
-                                  >
-                                    {pct}%
-                                  </span>
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {formatDate(item.analyzed_at)}
-                                </TableCell>
-                              </TableRow>
-                              {expandedRow === idx && (
-                                <TableRow key={`${idx}-expanded`}>
-                                  <TableCell colSpan={4} className="bg-muted/50 p-4">
-                                    <div className="space-y-2">
-                                      {item.keyword_scores && item.keyword_scores.length > 0 ? (
-                                        item.keyword_scores.map((ks) => (
-                                          <KeywordBar
-                                            key={ks.phrase}
-                                            item={ks}
-                                            isPrimary={ks.phrase === (item.target_keyword ?? item.comparison_value)}
-                                          />
-                                        ))
-                                      ) : (
-                                        <p className="text-sm text-muted-foreground">
-                                          No keyword breakdown available for this analysis.
-                                        </p>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                  {history.last_page > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t">
-                      <span className="text-sm text-muted-foreground">
-                        Page {history.current_page} of {history.last_page} ({history.total} total)
-                      </span>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={history.current_page <= 1}
-                          onClick={() => loadHistory(historyPage - 1)}
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={history.current_page >= history.last_page}
-                          onClick={() => loadHistory(historyPage + 1)}
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              )}
-            </>
-          )}
-          </ContentAreaLoader>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }

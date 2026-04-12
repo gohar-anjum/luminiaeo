@@ -1,38 +1,20 @@
-import { useState, useCallback } from "react";
-import { Link } from "wouter";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Copy,
   ClipboardCopy,
   Lightbulb,
   Clock,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  Loader2,
 } from "lucide-react";
 import { FeatureHero } from "@/components/FeatureHero";
 import { META_OPTIMIZER_HERO } from "@/config/featureHeroConfigs";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, handleApiError, validateUrl, normalizeUrl } from "@/lib/api";
 import { ApiError } from "@/lib/api/client";
-import type {
-  MetaOptimizeResponse,
-  MetaOptimizeHistoryItem,
-  PaginatedResponse,
-} from "@/lib/api/types";
+import type { MetaOptimizeResponse } from "@/lib/api/types";
 import { useQueryClient } from "@tanstack/react-query";
 
 const CREDIT_COST = 4;
@@ -92,12 +74,6 @@ export default function MetaOptimizer() {
   const [results, setResults] = useState<MetaOptimizeResponse | null>(null);
   const [analyzedUrl, setAnalyzedUrl] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
-
-  // History state
-  const [history, setHistory] = useState<PaginatedResponse<MetaOptimizeHistoryItem> | null>(null);
-  const [historyPage, setHistoryPage] = useState(1);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
   const handleScan = async () => {
     const trimmed = url.trim();
@@ -162,23 +138,6 @@ export default function MetaOptimizer() {
     }
   };
 
-  const loadHistory = useCallback(
-    async (page: number) => {
-      setIsLoadingHistory(true);
-      try {
-        const data = await apiClient.getMetaOptimizeHistory(page, 10);
-        setHistory(data);
-        setHistoryPage(page);
-      } catch (error: any) {
-        const { message } = handleApiError(error);
-        toast({ title: "Error loading history", description: message, variant: "destructive" });
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    },
-    [toast]
-  );
-
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied!", description: `${label} copied to clipboard.` });
@@ -189,13 +148,6 @@ export default function MetaOptimizer() {
     const text = `Title: ${results.title}\nDescription: ${results.description}`;
     navigator.clipboard.writeText(text);
     toast({ title: "Copied!", description: "Title and description copied." });
-  };
-
-  const handleReanalyze = (item: MetaOptimizeHistoryItem) => {
-    setUrl(item.url);
-    setKeyword(item.target_keyword ?? "");
-    setResults(null);
-    setExpandedRow(null);
   };
 
   return (
@@ -215,19 +167,7 @@ export default function MetaOptimizer() {
         onSecondaryInputChange={setKeyword}
       />
 
-      <Tabs
-        defaultValue="optimize"
-        onValueChange={(v) => {
-          if (v === "history" && !history) loadHistory(1);
-        }}
-      >
-        <TabsList>
-          <TabsTrigger value="optimize">Optimize</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
-
-        {/* Optimize Tab */}
-        <TabsContent value="optimize" className="space-y-6 mt-4">
+      <div className="space-y-6 mt-4">
           {urlError && (
             <p className="text-sm text-destructive" data-testid="text-url-error">
               {urlError}
@@ -427,172 +367,7 @@ export default function MetaOptimizer() {
             </>
           )}
           </ContentAreaLoader>
-        </TabsContent>
-
-        {/* History Tab */}
-        <TabsContent value="history" className="space-y-4 mt-4">
-          <p className="text-sm text-muted-foreground">
-            For a bookmarkable view with the same API data, open{" "}
-            <Link
-              href="/page-analysis/history?tool=meta"
-              className="text-primary font-medium underline-offset-2 hover:underline"
-            >
-              Analysis history → Meta
-            </Link>
-            .
-          </p>
-          <ContentAreaLoader
-            loading={isLoadingHistory}
-            phase="Loading optimization history…"
-            minHeightClassName="min-h-[200px]"
-          >
-          {history && !isLoadingHistory && (
-            <>
-              {history.data.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center text-muted-foreground">
-                    No optimization history yet. Run your first analysis above.
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="p-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>URL</TableHead>
-                          <TableHead>Keyword</TableHead>
-                          <TableHead>Suggested Title</TableHead>
-                          <TableHead>Intent</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead className="w-10" />
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {history.data.map((item, idx) => (
-                          <>
-                            <TableRow
-                              key={idx}
-                              className="cursor-pointer"
-                              onClick={() =>
-                                setExpandedRow(expandedRow === idx ? null : idx)
-                              }
-                            >
-                              <TableCell className="max-w-[200px] truncate text-sm">
-                                {item.url}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                {item.target_keyword || "—"}
-                              </TableCell>
-                              <TableCell className="max-w-[220px] truncate text-sm">
-                                {item.suggested_title}
-                              </TableCell>
-                              <TableCell>
-                                <IntentBadge intent={item.intent} />
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                                {formatDate(item.analyzed_at)}
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleReanalyze(item);
-                                  }}
-                                  title="Re-analyze"
-                                >
-                                  <RefreshCw className="w-3.5 h-3.5" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                            {expandedRow === idx && (
-                              <TableRow key={`${idx}-expanded`}>
-                                <TableCell colSpan={6} className="bg-muted/50 p-4">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                      <div className="font-medium mb-1">
-                                        Original Title
-                                      </div>
-                                      <p className="text-muted-foreground">
-                                        {item.original_title || "N/A"}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <div className="font-medium mb-1">
-                                        Optimized Title
-                                      </div>
-                                      <p>{item.suggested_title}</p>
-                                    </div>
-                                    <div>
-                                      <div className="font-medium mb-1">
-                                        Original Description
-                                      </div>
-                                      <p className="text-muted-foreground">
-                                        {item.original_description || "N/A"}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <div className="font-medium mb-1">
-                                        Optimized Description
-                                      </div>
-                                      <p>{item.suggested_description}</p>
-                                    </div>
-                                    {item.suggestions && item.suggestions.length > 0 && (
-                                      <div className="md:col-span-2">
-                                        <div className="font-medium mb-1">
-                                          Suggestions
-                                        </div>
-                                        <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                                          {item.suggestions.map((s, si) => (
-                                            <li key={si}>{s}</li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                  {history.last_page > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t">
-                      <span className="text-sm text-muted-foreground">
-                        Page {history.current_page} of {history.last_page} ({history.total} total)
-                      </span>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={history.current_page <= 1}
-                          onClick={() => loadHistory(historyPage - 1)}
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={history.current_page >= history.last_page}
-                          onClick={() => loadHistory(historyPage + 1)}
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              )}
-            </>
-          )}
-          </ContentAreaLoader>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }

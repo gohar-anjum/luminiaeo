@@ -1,18 +1,8 @@
-import { useState, useCallback } from "react";
-import { Link } from "wouter";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Collapsible,
   CollapsibleContent,
@@ -23,23 +13,14 @@ import {
   Download,
   Clock,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   FileText,
   MessageSquareText,
-  Loader2,
   Sparkles,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient, handleApiError } from "@/lib/api";
 import { ApiError } from "@/lib/api/client";
-import type {
-  ContentOutlineResponse,
-  ContentOutlineHistoryItem,
-  ContentTone,
-  OutlineSection,
-  PaginatedResponse,
-} from "@/lib/api/types";
+import type { ContentOutlineResponse, ContentTone, OutlineSection } from "@/lib/api/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { FeatureHero } from "@/components/FeatureHero";
 import { CONTENT_GENERATOR_HERO } from "@/config/featureHeroConfigs";
@@ -256,12 +237,6 @@ export default function ContentGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [results, setResults] = useState<ContentOutlineResponse | null>(null);
 
-  // History
-  const [history, setHistory] = useState<PaginatedResponse<ContentOutlineHistoryItem> | null>(null);
-  const [historyPage, setHistoryPage] = useState(1);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [expandedRow, setExpandedRow] = useState<number | null>(null);
-
   const handleGenerate = async () => {
     const trimmed = keyword.trim();
     if (!trimmed) {
@@ -314,23 +289,6 @@ export default function ContentGenerator() {
     }
   };
 
-  const loadHistory = useCallback(
-    async (page: number) => {
-      setIsLoadingHistory(true);
-      try {
-        const data = await apiClient.getContentOutlineHistory(page, 10);
-        setHistory(data);
-        setHistoryPage(page);
-      } catch (error: any) {
-        const { message } = handleApiError(error);
-        toast({ title: "Error loading history", description: message, variant: "destructive" });
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    },
-    [toast]
-  );
-
   const handleDownloadJSON = () => {
     if (!results) return;
     const blob = new Blob([JSON.stringify(results, null, 2)], {
@@ -356,18 +314,7 @@ export default function ContentGenerator() {
         formExtras={<TonePicker tone={tone} setTone={setTone} />}
       />
 
-      <Tabs
-        defaultValue="generate"
-        onValueChange={(v) => {
-          if (v === "history" && !history) loadHistory(1);
-        }}
-      >
-        <TabsList>
-          <TabsTrigger value="generate">Generate</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="generate" className="space-y-6 mt-4">
+      <div className="space-y-6 mt-4">
           <ContentAreaLoader
             loading={isGenerating}
             phase="Generating content outline…"
@@ -526,146 +473,7 @@ export default function ContentGenerator() {
             </>
           )}
           </ContentAreaLoader>
-        </TabsContent>
-
-        {/* History Tab */}
-        <TabsContent value="history" className="space-y-4 mt-4">
-          <p className="text-sm text-muted-foreground">
-            For a bookmarkable view with the same API data, open{" "}
-            <Link
-              href="/page-analysis/history?tool=content"
-              className="text-primary font-medium underline-offset-2 hover:underline"
-            >
-              Analysis history → Outlines
-            </Link>
-            .
-          </p>
-          <ContentAreaLoader
-            loading={isLoadingHistory}
-            phase="Loading outline history…"
-            minHeightClassName="min-h-[200px]"
-          >
-          {history && !isLoadingHistory && (
-            <>
-              {history.data.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center text-muted-foreground">
-                    No generation history yet.
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="p-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Keyword</TableHead>
-                          <TableHead>Tone</TableHead>
-                          <TableHead>Intent</TableHead>
-                          <TableHead>Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {history.data.map((item, idx) => (
-                          <>
-                            <TableRow
-                              key={idx}
-                              className="cursor-pointer"
-                              onClick={() =>
-                                setExpandedRow(expandedRow === idx ? null : idx)
-                              }
-                            >
-                              <TableCell className="text-sm font-medium">
-                                {item.keyword}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="text-xs capitalize">
-                                  {item.tone}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <IntentBadge intent={item.intent} />
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                                {formatDate(item.generated_at)}
-                              </TableCell>
-                            </TableRow>
-                            {expandedRow === idx && (
-                              <TableRow key={`${idx}-expanded`}>
-                                <TableCell colSpan={4} className="bg-muted/50 p-4">
-                                  <h4 className="font-semibold mb-2">
-                                    Outline for &quot;{item.keyword}&quot;
-                                  </h4>
-                                  <div className="space-y-1 text-sm">
-                                    {(Array.isArray(item.outline) ? item.outline : []).map((s, si) => (
-                                      <div key={si} className="ml-2">
-                                        <div className="font-medium">
-                                          {s.heading}
-                                        </div>
-                                        {(s.subsections ?? []).map((sub, ssi) => (
-                                          <div
-                                            key={ssi}
-                                            className="ml-4 text-muted-foreground"
-                                          >
-                                            {sub.heading}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {item.semantic_keywords && item.semantic_keywords.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-3">
-                                      {item.semantic_keywords.map((kw) => (
-                                        <Badge
-                                          key={kw}
-                                          variant="secondary"
-                                          className="text-[10px]"
-                                        >
-                                          {kw}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                  {history.last_page > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t">
-                      <span className="text-sm text-muted-foreground">
-                        Page {history.current_page} of {history.last_page} ({history.total} total)
-                      </span>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={history.current_page <= 1}
-                          onClick={() => loadHistory(historyPage - 1)}
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={history.current_page >= history.last_page}
-                          onClick={() => loadHistory(historyPage + 1)}
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              )}
-            </>
-          )}
-          </ContentAreaLoader>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }
