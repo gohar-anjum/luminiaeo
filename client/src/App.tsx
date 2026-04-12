@@ -28,6 +28,7 @@ import AIVisibility from "@/pages/AIVisibility";
 import Clustering from "@/pages/Clustering";
 import PBNDetector from "@/pages/PBNDetector";
 import MetaOptimizer from "@/pages/MetaOptimizer";
+import PageAnalysisHistory from "@/pages/PageAnalysisHistory";
 import Projects from "@/pages/Projects";
 import Billing from "@/pages/Billing";
 import BillingSuccess from "@/pages/BillingSuccess";
@@ -136,6 +137,14 @@ function Router() {
         <UserProtectedRoute>
           <AuthenticatedLayout>
             <MetaOptimizer />
+          </AuthenticatedLayout>
+        </UserProtectedRoute>
+      </Route>
+
+      <Route path="/page-analysis/history">
+        <UserProtectedRoute>
+          <AuthenticatedLayout>
+            <PageAnalysisHistory />
           </AuthenticatedLayout>
         </UserProtectedRoute>
       </Route>

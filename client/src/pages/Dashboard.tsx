@@ -220,9 +220,9 @@ export default function Dashboard() {
       </div> */}
 
       <ContentAreaLoader loading={isLoading} phase="Loading dashboard…" minHeightClassName="min-h-[280px]">
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {features.length > 0 && (
-          <Card className="me-12" data-testid="card-credit-consumption">
+          <Card data-testid="card-credit-consumption">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
                 <CardTitle>Credit consumption</CardTitle>
@@ -260,7 +260,10 @@ export default function Dashboard() {
         )}
 
         {/* Recent Activity — credit transactions from API */}
-        <Card className="me-12" data-testid="card-recent-activity">
+        <Card
+          className={features.length === 0 ? "lg:col-span-2" : undefined}
+          data-testid="card-recent-activity"
+        >
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">

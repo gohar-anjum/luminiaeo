@@ -1,7 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
@@ -13,13 +11,11 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Search, 
-  AlertCircle, 
-  Sparkles, 
+import {
+  AlertCircle,
   Copy,
   CheckCircle2,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
@@ -333,6 +329,7 @@ export default function FAQGenerator() {
 
   const isInputValid = input.trim().length > 0 && input.length <= 2048;
   const faqsWithAnswers = questions.filter(q => q.has_answer && q.answer);
+  const heroHasResults = questions.length > 0 || loading;
 
   return (
     <div className="p-8 space-y-6">
@@ -345,45 +342,27 @@ export default function FAQGenerator() {
         }}
         onCtaClick={handleGenerate}
         ctaDisabled={loading || !isInputValid}
+        hasResults={heroHasResults}
+        formExtras={
+          <div className="flex justify-center mt-2.5">
+            <LocationSelector
+              value={locationCode}
+              onChange={setLocationCode}
+              label=""
+              showSearch={true}
+              disabled={loading}
+            />
+          </div>
+        }
       />
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-1 gap-4 max-w-xl">
-              <LocationSelector
-                value={locationCode}
-                onChange={setLocationCode}
-                label="Target Location"
-                showSearch={true}
-                disabled={loading}
-              />
-              <p className="text-sm text-muted-foreground">
-                Set your URL or topic in the banner above, then pick the market you want FAQs tailored for.
-              </p>
-            </div>
-
-            {/* Progress Bar */}
-            {loading && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Progress</span>
-                  <span className="text-muted-foreground">{progress}%</span>
-                </div>
-                <Progress value={progress} className="h-2" />
-              </div>
-            )}
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {error && !loading && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {loading && questions.length === 0 ? (
         <ContentAreaLoader
@@ -392,14 +371,21 @@ export default function FAQGenerator() {
           minHeightClassName="min-h-[240px]"
           className="rounded-lg border border-border/60"
         >
-          <div className="min-h-[220px]" aria-hidden />
+          <div className="w-full max-w-md mx-auto space-y-3 py-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="text-muted-foreground">{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+          <div className="min-h-[120px]" aria-hidden />
         </ContentAreaLoader>
       ) : null}
 
       {questions.length > 0 && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle>
                 Questions ({questions.length})
                 {faqsWithAnswers.length > 0 && (
@@ -408,17 +394,38 @@ export default function FAQGenerator() {
                   </span>
                 )}
               </CardTitle>
-              {faqsWithAnswers.length > 0 && (
+              <div className="flex flex-wrap gap-2">
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleCopyAll}
-                  className="gap-2"
+                  onClick={() => {
+                    setQuestions([]);
+                    setTaskId(null);
+                    setError(null);
+                    setProgress(0);
+                    setTaskStatus("idle");
+                    setLoading(false);
+                    if (pollIntervalRef.current) {
+                      clearTimeout(pollIntervalRef.current);
+                      pollIntervalRef.current = null;
+                    }
+                  }}
                 >
-                  <Copy className="w-4 h-4" />
-                  Copy All
+                  ← New Search
                 </Button>
-              )}
+                {faqsWithAnswers.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyAll}
+                    className="gap-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy All
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -503,18 +510,6 @@ export default function FAQGenerator() {
         </Card>
       )}
 
-      {!loading && questions.length === 0 && !error && (
-        <Card>
-          <CardContent className="p-12">
-            <div className="text-center space-y-2">
-              <Sparkles className="w-12 h-12 mx-auto text-muted-foreground opacity-50" />
-              <p className="text-muted-foreground">
-                Enter a URL or topic above to generate FAQs
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

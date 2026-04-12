@@ -1,7 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PhaseLoader } from "@/components/PhaseLoader";
@@ -14,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
 import { usePagination } from "@/hooks/usePagination";
@@ -312,11 +309,8 @@ export default function PBNDetector() {
         onInputChange={setDomain}
         onCtaClick={handleAnalyze}
         ctaDisabled={isAnalyzing || !domain.trim()}
+        hasResults={showResults || isAnalyzing}
       />
-
-      <p className="text-sm text-muted-foreground max-w-2xl">
-        Enter a root domain in the banner above, then run the analysis. Large profiles can take a few minutes.
-      </p>
 
       {(isAnalyzing || (taskStatus && taskStatus !== "completed")) && (
         <Card>
@@ -345,6 +339,27 @@ export default function PBNDetector() {
 
       {showResults && pbnData && pbnData.length > 0 && (
         <>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowResults(false);
+                setPbnData([]);
+                setPbnSummary(null);
+                setBacklinksSummary(null);
+                setTaskId(null);
+                setTaskStatus(null);
+                if (pollingIntervalRef.current) {
+                  clearInterval(pollingIntervalRef.current);
+                  pollingIntervalRef.current = null;
+                }
+              }}
+            >
+              ← New Search
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card data-testid="card-total">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -22,7 +22,7 @@ import { PhaseLoader } from "@/components/PhaseLoader";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { formatNumber, formatCurrency } from "@/utils/formatters";
-import { Search, Download, Plus, FileText, ArrowUpDown, Loader2, Database } from "lucide-react";
+import { Download, FileText, ArrowUpDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
@@ -372,6 +372,20 @@ export default function KeywordResearch() {
     }
   };
 
+  const resetToHero = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    setDisplayData(null);
+    setActiveJobId(null);
+    setJobStatus(null);
+    setJobResults(null);
+    setIsCreating(false);
+    setSelectedKeywords(new Set());
+    setSearchTerm("");
+  };
+
   const handleExport = () => {
     if (selectedKeywords.size === 0) {
       toast({
@@ -461,6 +475,8 @@ export default function KeywordResearch() {
     return <Badge variant="outline" className="text-xs">{source}</Badge>;
   };
 
+  const heroHasResults = displayData !== null || isCreating;
+
   return (
     <div className="p-8 space-y-6">
       <FeatureHero
@@ -469,36 +485,35 @@ export default function KeywordResearch() {
         onInputChange={setQuery}
         onCtaClick={handleSearch}
         ctaDisabled={isCreating || !query.trim()}
+        hasResults={heroHasResults}
+        formExtras={
+          <div className="flex flex-wrap gap-2.5 justify-center mt-2.5">
+            <Select
+              value={intentOption}
+              onValueChange={(v) => setIntentOption(v as "informational" | "all")}
+              disabled={isCreating}
+            >
+              <SelectTrigger className="w-[200px]" aria-label="Keyword intent">
+                <SelectValue placeholder="Intent" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="informational">Informational</SelectItem>
+                <SelectItem value="all">All intents</SelectItem>
+              </SelectContent>
+            </Select>
+            <LocationSelector
+              value={locationCode}
+              onChange={setLocationCode}
+              label=""
+              showSearch={true}
+              disabled={isCreating}
+            />
+          </div>
+        }
       />
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground max-w-xl">
-              Choose whether to focus on informational intent or all intents, then run your search from the field above.
-            </p>
-            <div className="flex w-full sm:w-[220px] shrink-0">
-              <Select
-                value={intentOption}
-                onValueChange={(v) => setIntentOption(v as "informational" | "all")}
-                disabled={isCreating}
-              >
-                <SelectTrigger aria-label="Keyword intent">
-                  <SelectValue placeholder="Intent" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="informational">Informational</SelectItem>
-                  <SelectItem value="all">All intents</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Filters */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="relative">
+      {heroHasResults && (
+        <div className="max-w-md">
           <Input
             placeholder="Search keywords..."
             className="pl-10"
@@ -507,18 +522,15 @@ export default function KeywordResearch() {
             data-testid="input-search-keyword"
           />
         </div>
-
-        <LocationSelector
-          value={locationCode}
-          onChange={setLocationCode}
-          label=""
-          showSearch={true}
-          disabled={isCreating}
-        />
-      </div>
+      )}
 
       {data && data.length > 0 && (
         <div className="flex flex-wrap gap-2">
+          {heroHasResults && (
+            <Button type="button" variant="outline" onClick={resetToHero}>
+              ← New Search
+            </Button>
+          )}
           <Button 
             onClick={handleExport} 
             variant="outline" 

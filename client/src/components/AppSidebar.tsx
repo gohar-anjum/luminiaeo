@@ -12,6 +12,7 @@ import {
   CreditCard,
   Settings,
   LayoutDashboard,
+  History,
 } from "lucide-react";
 import {
   Sidebar,
@@ -47,6 +48,7 @@ const menuGroups = [
       { title: "Meta Tag Optimizer", url: "/meta", icon: Tag },
       { title: "Semantic Score Checker", url: "/semantic", icon: CheckCircle2 },
       { title: "Content Generator", url: "/content-generator", icon: FileText },
+      { title: "Analysis History", url: "/page-analysis/history", icon: History },
     ],
   },
   {
@@ -124,7 +126,7 @@ export function AppSidebar() {
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
                           asChild
-                          isActive={location === item.url}
+                          isActive={location.split("?")[0] === item.url}
                           data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                         >
                           <Link href={item.url}>

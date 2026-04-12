@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
@@ -23,7 +22,6 @@ import {
   Copy,
   Download,
   Clock,
-  Coins,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -45,6 +43,7 @@ import type {
 import { useQueryClient } from "@tanstack/react-query";
 import { FeatureHero } from "@/components/FeatureHero";
 import { CONTENT_GENERATOR_HERO } from "@/config/featureHeroConfigs";
+import { cn } from "@/lib/utils";
 
 const CREDIT_COST = 4;
 
@@ -55,6 +54,36 @@ const TONE_OPTIONS: { value: ContentTone; label: string }[] = [
   { value: "persuasive", label: "Persuasive" },
   { value: "informative", label: "Informative" },
 ];
+
+function TonePicker({
+  tone,
+  setTone,
+}: {
+  tone: ContentTone;
+  setTone: (t: ContentTone) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5 justify-center mt-2.5 items-center">
+      <span className="text-xs text-muted-foreground shrink-0 mr-0.5">Tone:</span>
+      {TONE_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => setTone(opt.value)}
+          data-testid={`button-tone-${opt.value}`}
+          className={cn(
+            "rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors",
+            tone === opt.value
+              ? "border-[#8b5cf6] bg-[#8b5cf6]/10 text-[#8b5cf6]"
+              : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function IntentBadge({ intent }: { intent: string | null }) {
   if (!intent) return null;
@@ -323,6 +352,8 @@ export default function ContentGenerator() {
         onInputChange={setKeyword}
         onCtaClick={handleGenerate}
         ctaDisabled={isGenerating || !keyword.trim()}
+        hasResults={results !== null || isGenerating}
+        formExtras={<TonePicker tone={tone} setTone={setTone} />}
       />
 
       <Tabs
@@ -337,40 +368,6 @@ export default function ContentGenerator() {
         </TabsList>
 
         <TabsContent value="generate" className="space-y-6 mt-4">
-          <Card data-testid="card-generator">
-            <CardContent className="p-6 space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Enter your keyword in the banner above, pick a tone below, then run &quot;Generate Outline&quot; from the banner.
-              </p>
-
-              <div className="space-y-2">
-                <Label className="text-sm">Tone</Label>
-                <div className="flex flex-wrap gap-2">
-                  {TONE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setTone(opt.value)}
-                      className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                        tone === opt.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
-                      }`}
-                      data-testid={`button-tone-${opt.value}`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Coins className="w-3 h-3" />
-                Each outline uses {CREDIT_COST} credits.
-              </p>
-            </CardContent>
-          </Card>
-
           <ContentAreaLoader
             loading={isGenerating}
             phase="Generating content outline…"
@@ -378,6 +375,12 @@ export default function ContentGenerator() {
           >
           {results && !isGenerating && (
             <>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" onClick={() => setResults(null)}>
+                  ← New Search
+                </Button>
+              </div>
+
               {/* Cache badge */}
               {results.from_cache && (
                 <div className="flex items-center gap-2">
@@ -527,6 +530,16 @@ export default function ContentGenerator() {
 
         {/* History Tab */}
         <TabsContent value="history" className="space-y-4 mt-4">
+          <p className="text-sm text-muted-foreground">
+            For a bookmarkable view with the same API data, open{" "}
+            <Link
+              href="/page-analysis/history?tool=content"
+              className="text-primary font-medium underline-offset-2 hover:underline"
+            >
+              Analysis history → Outlines
+            </Link>
+            .
+          </p>
           <ContentAreaLoader
             loading={isLoadingHistory}
             phase="Loading outline history…"

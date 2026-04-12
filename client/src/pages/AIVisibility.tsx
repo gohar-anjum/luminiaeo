@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PhaseLoader } from "@/components/PhaseLoader";
@@ -13,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, CheckCircle2, XCircle, RefreshCw, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, AlertCircle } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { FeatureHero } from "@/components/FeatureHero";
 import { AI_VISIBILITY_HERO } from "@/config/featureHeroConfigs";
@@ -414,12 +412,8 @@ export default function AIVisibility() {
         onInputChange={setUrl}
         onCtaClick={handleAnalyze}
         ctaDisabled={isAnalyzing || !url.trim()}
+        hasResults={results !== null || isAnalyzing}
       />
-
-      <p className="text-sm text-muted-foreground max-w-2xl">
-        The system will generate hot topic questions and check if your domain is cited in GPT and Gemini responses. Use
-        the banner above to start an analysis.
-      </p>
 
       {isAnalyzing && taskStatus && (
         <Card>
@@ -469,6 +463,25 @@ export default function AIVisibility() {
 
       {results && (
         <>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setResults(null);
+                setIsAnalyzing(false);
+                setTaskId(null);
+                setTaskStatus(null);
+                if (pollingIntervalRef.current) {
+                  clearInterval(pollingIntervalRef.current);
+                  pollingIntervalRef.current = null;
+                }
+              }}
+            >
+              ← New Search
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card data-testid="card-queries">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

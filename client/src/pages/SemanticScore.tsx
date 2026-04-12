@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
@@ -15,9 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Search,
   Clock,
-  Coins,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -282,6 +279,10 @@ export default function SemanticScore() {
         }}
         onCtaClick={handleAnalyze}
         ctaDisabled={isAnalyzing || !url.trim()}
+        hasResults={results !== null || isAnalyzing}
+        secondaryInputPlaceholder="Focus keyword (optional, auto-detected if empty)"
+        secondaryInputValue={keyword}
+        onSecondaryInputChange={setKeyword}
       />
 
       <Tabs
@@ -296,28 +297,11 @@ export default function SemanticScore() {
         </TabsList>
 
         <TabsContent value="analyze" className="space-y-6 mt-4">
-          <Card data-testid="card-analyze">
-            <CardContent className="p-6 space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Enter the page URL in the banner above, then optionally narrow the analysis with a focus keyword.
-              </p>
-              <div className="space-y-2">
-                <Label htmlFor="keyword">Focus Keyword</Label>
-                <Input
-                  id="keyword"
-                  placeholder="Focus keyword (auto-detected if empty)"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  data-testid="input-keyword"
-                />
-              </div>
-              {urlError && <p className="text-xs text-destructive">{urlError}</p>}
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Coins className="w-3 h-3" />
-                Each run uses {CREDIT_COST} credit — click &quot;Analyze Page&quot; in the banner to start.
-              </p>
-            </CardContent>
-          </Card>
+          {urlError && (
+            <p className="text-sm text-destructive" data-testid="text-url-error">
+              {urlError}
+            </p>
+          )}
 
           <ContentAreaLoader
             loading={isAnalyzing}
@@ -326,6 +310,16 @@ export default function SemanticScore() {
           >
           {results && !isAnalyzing && (
             <>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setResults(null)}
+                >
+                  ← New Search
+                </Button>
+              </div>
+
               {/* Cache badge */}
               {results.from_cache && (
                 <div className="flex items-center gap-2">
@@ -389,6 +383,16 @@ export default function SemanticScore() {
 
         {/* History Tab */}
         <TabsContent value="history" className="space-y-4 mt-4">
+          <p className="text-sm text-muted-foreground">
+            For a bookmarkable view with the same API data, open{" "}
+            <Link
+              href="/page-analysis/history?tool=semantic"
+              className="text-primary font-medium underline-offset-2 hover:underline"
+            >
+              Analysis history → Semantic
+            </Link>
+            .
+          </p>
           <ContentAreaLoader
             loading={isLoadingHistory}
             phase="Loading analysis history…"

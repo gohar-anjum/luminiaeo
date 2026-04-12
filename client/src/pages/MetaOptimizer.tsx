@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
@@ -15,12 +14,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Search,
   Copy,
   ClipboardCopy,
   Lightbulb,
   Clock,
-  Coins,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
@@ -212,6 +209,10 @@ export default function MetaOptimizer() {
         }}
         onCtaClick={handleScan}
         ctaDisabled={isScanning || !url.trim()}
+        hasResults={results !== null || isScanning}
+        secondaryInputPlaceholder="Target keyword (optional but recommended)"
+        secondaryInputValue={keyword}
+        onSecondaryInputChange={setKeyword}
       />
 
       <Tabs
@@ -227,31 +228,11 @@ export default function MetaOptimizer() {
 
         {/* Optimize Tab */}
         <TabsContent value="optimize" className="space-y-6 mt-4">
-          <Card data-testid="card-scan">
-            <CardContent className="p-6 space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Paste the page URL in the banner above, then add an optional target keyword for sharper suggestions.
-              </p>
-              <div className="space-y-2">
-                <Label htmlFor="keyword">Target Keyword</Label>
-                <Input
-                  id="keyword"
-                  placeholder="Enter your target keyword"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  data-testid="input-keyword"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Optional but recommended for more accurate optimization
-                </p>
-              </div>
-              {urlError && <p className="text-xs text-destructive">{urlError}</p>}
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Coins className="w-3 h-3" />
-                Each optimization uses {CREDIT_COST} credits — use &quot;Optimize Tags&quot; in the banner.
-              </p>
-            </CardContent>
-          </Card>
+          {urlError && (
+            <p className="text-sm text-destructive" data-testid="text-url-error">
+              {urlError}
+            </p>
+          )}
 
           <ContentAreaLoader
             loading={isScanning}
@@ -260,6 +241,19 @@ export default function MetaOptimizer() {
           >
           {results && !isScanning && (
             <>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setResults(null);
+                    setAnalyzedUrl("");
+                  }}
+                >
+                  ← New Search
+                </Button>
+              </div>
+
               {/* Status badges row */}
               <div className="flex flex-wrap items-center gap-2">
                 <IntentBadge intent={results.intent} />
@@ -437,6 +431,16 @@ export default function MetaOptimizer() {
 
         {/* History Tab */}
         <TabsContent value="history" className="space-y-4 mt-4">
+          <p className="text-sm text-muted-foreground">
+            For a bookmarkable view with the same API data, open{" "}
+            <Link
+              href="/page-analysis/history?tool=meta"
+              className="text-primary font-medium underline-offset-2 hover:underline"
+            >
+              Analysis history → Meta
+            </Link>
+            .
+          </p>
           <ContentAreaLoader
             loading={isLoadingHistory}
             phase="Loading optimization history…"

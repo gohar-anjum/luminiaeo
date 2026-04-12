@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -547,6 +545,8 @@ export default function Clustering() {
     phase === "polling" ||
     phase === "fetching_result";
 
+  const heroHasResults = payload !== null || busy;
+
   const handleExport = () => {
     if (!tableData.length) return;
     downloadCsv(tableData);
@@ -554,6 +554,14 @@ export default function Clustering() {
       title: "Export started",
       description: "Downloading cluster data as CSV…",
     });
+  };
+
+  const resetToHero = () => {
+    stopJob();
+    setPayload(null);
+    setPhase("idle");
+    setErrorMessage(null);
+    setFieldErrors(null);
   };
 
   const suggestErrors = payload?.meta?.suggest_errors ?? [];
@@ -567,28 +575,21 @@ export default function Clustering() {
         onInputChange={setKeyword}
         onCtaClick={handleGenerate}
         ctaDisabled={busy || !keyword.trim()}
+        hasResults={heroHasResults}
       />
 
-      <Card data-testid="card-generate">
-        <CardContent className="p-6">
-          <div className="space-y-4">
+      {phase === "failed" && (errorMessage || fieldErrors?.keyword?.length) ? (
+        <Alert variant="destructive" data-testid="alert-cluster-error">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Could not load cluster</AlertTitle>
+          <AlertDescription>
             {fieldErrors?.keyword?.length ? (
-              <p className="text-sm text-destructive">{fieldErrors.keyword.join(" ")}</p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Enter a seed keyword in the banner above, then use &quot;Build Cluster&quot; to generate the tree.
-              </p>
-            )}
-            {errorMessage && phase === "failed" ? (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Could not load cluster</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
+              <p className="text-sm">{fieldErrors.keyword.join(" ")}</p>
             ) : null}
-          </div>
-        </CardContent>
-      </Card>
+            {errorMessage ? <p className="text-sm mt-1">{errorMessage}</p> : null}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {busy ? (
         <Card>
@@ -618,7 +619,10 @@ export default function Clustering() {
             </Alert>
           ) : null}
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button type="button" variant="outline" onClick={resetToHero}>
+              ← New Search
+            </Button>
             <Button
               onClick={handleExport}
               variant="outline"
