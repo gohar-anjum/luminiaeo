@@ -314,6 +314,10 @@ export default function ContentGenerator() {
         formExtras={<TonePicker tone={tone} setTone={setTone} />}
       />
 
+      {(results !== null || isGenerating) && (
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Content Generator</h1>
+      )}
+
       <div className="space-y-6 mt-4">
           <ContentAreaLoader
             loading={isGenerating}

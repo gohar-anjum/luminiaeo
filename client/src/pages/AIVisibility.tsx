@@ -415,6 +415,10 @@ export default function AIVisibility() {
         hasResults={results !== null || isAnalyzing}
       />
 
+      {(results !== null || isAnalyzing) && (
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">AI Indexability & Citations</h1>
+      )}
+
       {isAnalyzing && taskStatus && (
         <Card>
           <CardHeader>

@@ -356,6 +356,10 @@ export default function FAQGenerator() {
         }
       />
 
+      {heroHasResults && (
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">FAQ / Facts Generator</h1>
+      )}
+
       {error && !loading && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />

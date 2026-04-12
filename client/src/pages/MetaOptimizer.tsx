@@ -167,6 +167,10 @@ export default function MetaOptimizer() {
         onSecondaryInputChange={setKeyword}
       />
 
+      {(results !== null || isScanning) && (
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Meta Tag Optimizer</h1>
+      )}
+
       <div className="space-y-6 mt-4">
           {urlError && (
             <p className="text-sm text-destructive" data-testid="text-url-error">

@@ -312,6 +312,10 @@ export default function PBNDetector() {
         hasResults={showResults || isAnalyzing}
       />
 
+      {(showResults || isAnalyzing) && (
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">PBN Detector</h1>
+      )}
+
       {(isAnalyzing || (taskStatus && taskStatus !== "completed")) && (
         <Card>
           <CardHeader>

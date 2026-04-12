@@ -578,6 +578,10 @@ export default function Clustering() {
         hasResults={heroHasResults}
       />
 
+      {heroHasResults && (
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Keyword Clustering</h1>
+      )}
+
       {phase === "failed" && (errorMessage || fieldErrors?.keyword?.length) ? (
         <Alert variant="destructive" data-testid="alert-cluster-error">
           <AlertTriangle className="h-4 w-4" />

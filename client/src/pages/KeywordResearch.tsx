@@ -513,6 +513,10 @@ export default function KeywordResearch() {
       />
 
       {heroHasResults && (
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Keyword Research</h1>
+      )}
+
+      {heroHasResults && (
         <div className="max-w-md">
           <Input
             placeholder="Search keywords..."
