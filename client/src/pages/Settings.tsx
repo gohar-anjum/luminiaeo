@@ -2,308 +2,251 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { apiClient } from "@/lib/api/client";
-import { ApiError } from "@/lib/api/client";
+import { apiClient, ApiError } from "@/lib/api/client";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
-import { FeatureHero } from "@/components/FeatureHero";
-import { SETTINGS_HERO } from "@/config/featureHeroConfigs";
 
 export default function Settings() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
-  const [profile, setProfile] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-  });
-  const [passwords, setPasswords] = useState({
-    current: "",
-    new: "",
-    confirm: "",
-  });
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // Update profile state when user changes
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    current_password: "",
+    password: "",
+    password_confirmation: "",
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     if (user) {
-      setProfile({
+      setForm((prev) => ({
+        ...prev,
         name: user.name || "",
         email: user.email || "",
-      });
+      }));
     }
   }, [user]);
 
-  const handleSaveProfile = async () => {
-    // Validate that at least one field has changed
-    if (profile.name === user?.name && profile.email === user?.email) {
-      toast({
-        title: "No Changes",
-        description: "No changes detected. Please update your information before saving.",
-        variant: "default",
-      });
-      return;
-    }
+  const handleSave = async () => {
+    // ===== VALIDATION LAYER =====
 
-    // Validate name length
-    if (profile.name && profile.name.length < 3) {
-      toast({
+    if (form.name && form.name.length < 3) {
+      return toast({
         title: "Validation Error",
         description: "Name must be at least 3 characters",
         variant: "destructive",
       });
-      return;
     }
 
-    // Validate email format
-    if (profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
-      toast({
+    if (
+        form.email &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+    ) {
+      return toast({
         title: "Validation Error",
-        description: "Please enter a valid email address",
+        description: "Invalid email format",
         variant: "destructive",
       });
-      return;
     }
 
-    setIsSavingProfile(true);
+    const isPasswordFlow =
+        form.current_password ||
+        form.password ||
+        form.password_confirmation;
+
+    if (isPasswordFlow) {
+      if (!form.current_password || !form.password || !form.password_confirmation) {
+        return toast({
+          title: "Error",
+          description: "All password fields are required",
+          variant: "destructive",
+        });
+      }
+
+      if (form.password !== form.password_confirmation) {
+        return toast({
+          title: "Error",
+          description: "Passwords do not match",
+          variant: "destructive",
+        });
+      }
+
+      if (form.password.length < 8) {
+        return toast({
+          title: "Error",
+          description: "Password must be at least 8 characters",
+          variant: "destructive",
+        });
+      }
+    }
+
+    // ===== REQUEST CONSTRUCTION =====
+
+    const request: any = {};
+
+    if (form.name !== user?.name) request.name = form.name;
+    if (form.email !== user?.email) request.email = form.email;
+
+    if (isPasswordFlow) {
+      request.current_password = form.current_password;
+      request.password = form.password;
+      request.password_confirmation = form.password_confirmation;
+    }
+
+    if (Object.keys(request).length === 0) {
+      return toast({
+        title: "No Changes",
+        description: "Nothing to update",
+      });
+    }
+
+    // ===== API CALL =====
+
+    setIsSaving(true);
+
     try {
-      const request: any = {};
-      if (profile.name && profile.name !== user?.name) {
-        request.name = profile.name;
-      }
-      if (profile.email && profile.email !== user?.email) {
-        request.email = profile.email;
-      }
+      await apiClient.updateProfile(request);
 
-      const response = await apiClient.updateProfile(request);
-      
-      // Refresh user data
-      if (refreshUser) {
-        await refreshUser();
-      }
-      
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-    } catch (error: any) {
-      console.error("Error updating profile:", error);
-      const errorMessage = error instanceof ApiError 
-        ? error.message 
-        : error.response?.message || error.message || "Failed to update profile";
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
-  const handleChangePassword = async () => {
-    if (!passwords.current || !passwords.new || !passwords.confirm) {
-      toast({
-        title: "Error",
-        description: "Please fill in all password fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (passwords.new !== passwords.confirm) {
-      toast({
-        title: "Error",
-        description: "New passwords do not match",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (passwords.new.length < 8) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 8 characters long",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsChangingPassword(true);
-    try {
-      await apiClient.updateProfile({
-        current_password: passwords.current,
-        password: passwords.new,
-        password_confirmation: passwords.confirm,
-      });
+      if (refreshUser) await refreshUser();
 
       toast({
         title: "Success",
-        description: "Password changed successfully",
+        description: "Settings updated successfully",
       });
-      setPasswords({ current: "", new: "", confirm: "" });
+
+      // Reset password fields only
+      setForm((prev) => ({
+        ...prev,
+        current_password: "",
+        password: "",
+        password_confirmation: "",
+      }));
     } catch (error: any) {
-      console.error("Error changing password:", error);
-      const errorMessage = error instanceof ApiError 
-        ? error.message 
-        : error.response?.message || error.message || "Failed to change password";
-      
+      console.error(error);
+
+      const message =
+          error instanceof ApiError
+              ? error.message
+              : error.response?.message ||
+              error.message ||
+              "Update failed";
+
       toast({
         title: "Error",
-        description: errorMessage,
+        description: message,
         variant: "destructive",
       });
     } finally {
-      setIsChangingPassword(false);
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="p-8 space-y-6">
-      <FeatureHero {...SETTINGS_HERO} />
+      <div className="p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Settings</CardTitle>
+            <CardDescription>
+              Manage your profile and security settings
+            </CardDescription>
+          </CardHeader>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList data-testid="tabs-settings">
-          <TabsTrigger value="profile" data-testid="tab-profile">
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="security" data-testid="tab-security">
-            Security
-          </TabsTrigger>
-          <TabsTrigger value="notifications" data-testid="tab-notifications">
-            Notifications
-          </TabsTrigger>
-        </TabsList>
+          <CardContent>
+            <ContentAreaLoader
+                loading={isSaving}
+                phase="Saving changes..."
+                minHeightClassName="min-h-[300px]"
+            >
+              <div className="space-y-6">
+                {/* Profile */}
+                <h3 className="text-lg font-medium">Profile</h3>
 
-        <TabsContent value="profile">
-          <Card data-testid="card-profile">
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                Update your personal information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ContentAreaLoader
-                loading={isSavingProfile}
-                phase="Saving profile…"
-                minHeightClassName="min-h-[200px]"
-              >
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
+                    <Label>Name</Label>
                     <Input
-                      id="name"
-                      value={profile.name}
-                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                      data-testid="input-name"
+                        value={form.name}
+                        onChange={(e) =>
+                            setForm({ ...form, name: e.target.value })
+                        }
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label>Email</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      value={profile.email}
-                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                      data-testid="input-email"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) =>
+                            setForm({ ...form, email: e.target.value })
+                        }
                     />
                   </div>
-                  <Button
-                    onClick={handleSaveProfile}
-                    disabled={isSavingProfile}
-                    data-testid="button-save-profile"
-                  >
-                    Save Changes
-                  </Button>
                 </div>
-              </ContentAreaLoader>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <h3 className="text-lg font-medium">Change Password</h3>
 
-        <TabsContent value="security">
-          <Card data-testid="card-security">
-            <CardHeader>
-              <CardTitle>Change Password</CardTitle>
-              <CardDescription>
-                Update your password to keep your account secure
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ContentAreaLoader
-                loading={isChangingPassword}
-                phase="Updating password…"
-                minHeightClassName="min-h-[260px]"
-              >
-                <div className="space-y-4">
+                {/* Security */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                   <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Label>Current Password</Label>
                     <Input
-                      id="currentPassword"
-                      type="password"
-                      value={passwords.current}
-                      onChange={(e) =>
-                        setPasswords({ ...passwords, current: e.target.value })
-                      }
-                      data-testid="input-current-password"
+                        type="password"
+                        value={form.current_password}
+                        onChange={(e) =>
+                            setForm({
+                              ...form,
+                              current_password: e.target.value,
+                            })
+                        }
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
+                    <Label>New Password</Label>
                     <Input
-                      id="newPassword"
-                      type="password"
-                      value={passwords.new}
-                      onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                      data-testid="input-new-password"
+                        type="password"
+                        value={form.password}
+                        onChange={(e) =>
+                            setForm({ ...form, password: e.target.value })
+                        }
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Label>Confirm Password</Label>
                     <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={passwords.confirm}
-                      onChange={(e) =>
-                        setPasswords({ ...passwords, confirm: e.target.value })
-                      }
-                      data-testid="input-confirm-password"
+                        type="password"
+                        value={form.password_confirmation}
+                        onChange={(e) =>
+                            setForm({
+                              ...form,
+                              password_confirmation: e.target.value,
+                            })
+                        }
                     />
                   </div>
-                  <Button
-                    onClick={handleChangePassword}
-                    disabled={isChangingPassword}
-                    data-testid="button-change-password"
-                  >
-                    Change Password
-                  </Button>
                 </div>
-              </ContentAreaLoader>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="notifications">
-          <Card data-testid="card-notifications">
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
-                Manage how you receive notifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                Notification settings coming soon...
+                <Button onClick={handleSave} disabled={isSaving}>
+                  Save Settings
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+            </ContentAreaLoader>
+          </CardContent>
+        </Card>
+      </div>
   );
 }

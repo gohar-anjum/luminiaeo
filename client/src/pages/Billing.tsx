@@ -138,7 +138,7 @@ export default function Billing() {
       </div>
 
       <ContentAreaLoader loading={loading} phase="Loading billing…" minHeightClassName="min-h-[320px]">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 lg:mb-8">
         <Card data-testid="card-credit-balance">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

@@ -6,7 +6,7 @@ const BADGE_STYLES: Record<BadgeColor, CSSProperties> = {
   green:  { background: 'rgba(52,211,153,0.12)',  color: 'var(--green)',   border: '1px solid rgba(52,211,153,0.25)' },
   amber:  { background: 'rgba(251,191,36,0.12)',  color: 'var(--amber)',   border: '1px solid rgba(251,191,36,0.25)' },
   red:    { background: 'rgba(248,113,113,0.12)', color: 'var(--red)',     border: '1px solid rgba(248,113,113,0.25)' },
-  blue:   { background: 'rgba(91,127,255,0.12)',  color: 'var(--accent)',  border: '1px solid rgba(91,127,255,0.25)' },
+  blue:   { background: 'var(--accent-subtle-bg)',  color: 'var(--accent)',  border: '1px solid var(--accent-subtle-border)' },
   purple: { background: 'rgba(167,139,250,0.12)', color: 'var(--accent2)', border: '1px solid rgba(167,139,250,0.25)' },
   teal:   { background: 'rgba(45,212,191,0.12)',  color: 'var(--teal)',    border: '1px solid rgba(45,212,191,0.25)' },
   gray:   { background: 'rgba(122,130,153,0.12)', color: 'var(--muted)',   border: '1px solid rgba(122,130,153,0.2)' },
@@ -319,7 +319,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ initials, gradA, gradB }
 interface NoticeProps { type?: 'info' | 'warn'; children: ReactNode; }
 export const Notice: React.FC<NoticeProps> = ({ type = 'info', children }) => {
   const styles: Record<string, CSSProperties> = {
-    info: { background: 'rgba(91,127,255,0.08)', border: '1px solid rgba(91,127,255,0.2)', color: 'var(--accent)' },
+    info: { background: 'var(--accent-faint-bg)', border: '1px solid var(--accent-faint-border)', color: 'var(--accent)' },
     warn: { background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', color: 'var(--amber)' },
   };
   return (

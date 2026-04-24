@@ -43,28 +43,28 @@ export function PublicFooter() {
             </ul>
           </div>
 
-          <div>
-            <h3 className="font-semibold mb-4">Resources</h3>
-            <ul className="space-y-2">
-              <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-footer-documentation">
-                  Documentation
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-footer-blog">
-                  Blog
-                </a>
-              </li>
-              <li>
-                <Link href="/contact" data-testid="link-footer-contact">
-                  <span className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">
-                    Contact
-                  </span>
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/*<div>*/}
+          {/*  <h3 className="font-semibold mb-4">Resources</h3>*/}
+          {/*  <ul className="space-y-2">*/}
+          {/*    <li>*/}
+          {/*      <a href="#" className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-footer-documentation">*/}
+          {/*        Documentation*/}
+          {/*      </a>*/}
+          {/*    </li>*/}
+          {/*    <li>*/}
+          {/*      <a href="#" className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-footer-blog">*/}
+          {/*        Blog*/}
+          {/*      </a>*/}
+          {/*    </li>*/}
+          {/*    <li>*/}
+          {/*      <Link href="/contact" data-testid="link-footer-contact">*/}
+          {/*        <span className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">*/}
+          {/*          Contact*/}
+          {/*        </span>*/}
+          {/*      </Link>*/}
+          {/*    </li>*/}
+          {/*  </ul>*/}
+          {/*</div>*/}
 
           <div>
             <h3 className="font-semibold mb-4">Legal</h3>

@@ -223,7 +223,7 @@ export default function Home() {
             <p className="text-lg text-slate-600">Flexible credit packs. No expiring credits. No hidden fees.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Free Tier */}
             <div className="p-8 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 transition-colors">
               <h3 className="text-xl font-bold text-slate-900">Free Trial</h3>
@@ -274,75 +274,75 @@ export default function Home() {
             </div>
 
             {/* Pro Tier */}
-            <div className="p-8 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 transition-colors">
-              <h3 className="text-xl font-bold text-slate-900">Pro Pack</h3>
-              <div className="mt-4 mb-6">
-                <span className="text-4xl font-bold text-slate-900">$20</span>
-                <span className="text-slate-400 font-medium"> / one-time</span>
-              </div>
-              <p className="text-slate-600 mb-8 min-h-[48px]">Best value for agencies and heavy users.</p>
-              <Button variant="outline" className="w-full mb-8 h-12 text-base font-semibold">Buy Credits</Button>
-              <ul className="space-y-4">
-                <li className="flex items-center gap-3 text-sm text-slate-700">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> 500 Credits ($0.04/credit)
-                </li>
-                <li className="flex items-center gap-3 text-sm text-slate-700">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> API Access
-                </li>
-                <li className="flex items-center gap-3 text-sm text-slate-700">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> White-label reports
-                </li>
-              </ul>
-            </div>
+            {/*<div className="p-8 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 transition-colors">*/}
+            {/*  <h3 className="text-xl font-bold text-slate-900">Pro Pack</h3>*/}
+            {/*  <div className="mt-4 mb-6">*/}
+            {/*    <span className="text-4xl font-bold text-slate-900">$20</span>*/}
+            {/*    <span className="text-slate-400 font-medium"> / one-time</span>*/}
+            {/*  </div>*/}
+            {/*  <p className="text-slate-600 mb-8 min-h-[48px]">Best value for agencies and heavy users.</p>*/}
+            {/*  <Button variant="outline" className="w-full mb-8 h-12 text-base font-semibold">Buy Credits</Button>*/}
+            {/*  <ul className="space-y-4">*/}
+            {/*    <li className="flex items-center gap-3 text-sm text-slate-700">*/}
+            {/*      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> 500 Credits ($0.04/credit)*/}
+            {/*    </li>*/}
+            {/*    <li className="flex items-center gap-3 text-sm text-slate-700">*/}
+            {/*      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> API Access*/}
+            {/*    </li>*/}
+            {/*    <li className="flex items-center gap-3 text-sm text-slate-700">*/}
+            {/*      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> White-label reports*/}
+            {/*    </li>*/}
+            {/*  </ul>*/}
+            {/*</div>*/}
           </div>
         </div>
       </section>
 
       {/* --- BLOG PREVIEW --- */}
-      <section id="blog" className="section-padding bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-12">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">Latest Insights</h2>
-              <p className="text-slate-600">Stay ahead of the AI search curve.</p>
-            </div>
-            <a href="#" className="text-primary font-medium hover:underline hidden sm:block">View all posts →</a>
-          </div>
+      {/*<section id="blog" className="section-padding bg-slate-50">*/}
+      {/*  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">*/}
+      {/*    <div className="flex justify-between items-end mb-12">*/}
+      {/*      <div>*/}
+      {/*        <h2 className="text-3xl font-bold text-slate-900 mb-2">Latest Insights</h2>*/}
+      {/*        <p className="text-slate-600">Stay ahead of the AI search curve.</p>*/}
+      {/*      </div>*/}
+      {/*      <a href="#" className="text-primary font-medium hover:underline hidden sm:block">View all posts →</a>*/}
+      {/*    </div>*/}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "The AI Search Revolution is Here",
-                excerpt: "Why Google SGE changes everything for SEO professionals and how to adapt.",
-                date: "Oct 12, 2024",
-                image: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=600&h=400&fit=crop"
-              },
-              {
-                title: "Optimizing for Perplexity",
-                excerpt: "A deep dive into how citation engines work and how to get your brand cited.",
-                date: "Oct 08, 2024",
-                image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop"
-              },
-              {
-                title: "Structured Data in 2025",
-                excerpt: "The schema markups that matter most for LLM training data visibility.",
-                date: "Sep 28, 2024",
-                image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&h=400&fit=crop"
-              }
-            ].map((post, i) => (
-              <div key={i} className="group cursor-pointer">
-                <div className="aspect-[3/2] rounded-xl overflow-hidden mb-4 bg-slate-200">
-                  {/* Blog post thumbnail */}
-                  <img src={post.image} alt={post.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                </div>
-                <div className="text-sm text-slate-500 mb-2">{post.date}</div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">{post.title}</h3>
-                <p className="text-slate-600 line-clamp-2">{post.excerpt}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/*    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">*/}
+      {/*      {[*/}
+      {/*        {*/}
+      {/*          title: "The AI Search Revolution is Here",*/}
+      {/*          excerpt: "Why Google SGE changes everything for SEO professionals and how to adapt.",*/}
+      {/*          date: "Oct 12, 2024",*/}
+      {/*          image: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=600&h=400&fit=crop"*/}
+      {/*        },*/}
+      {/*        {*/}
+      {/*          title: "Optimizing for Perplexity",*/}
+      {/*          excerpt: "A deep dive into how citation engines work and how to get your brand cited.",*/}
+      {/*          date: "Oct 08, 2024",*/}
+      {/*          image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop"*/}
+      {/*        },*/}
+      {/*        {*/}
+      {/*          title: "Structured Data in 2025",*/}
+      {/*          excerpt: "The schema markups that matter most for LLM training data visibility.",*/}
+      {/*          date: "Sep 28, 2024",*/}
+      {/*          image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&h=400&fit=crop"*/}
+      {/*        }*/}
+      {/*      ].map((post, i) => (*/}
+      {/*        <div key={i} className="group cursor-pointer">*/}
+      {/*          <div className="aspect-[3/2] rounded-xl overflow-hidden mb-4 bg-slate-200">*/}
+      {/*            /!* Blog post thumbnail *!/*/}
+      {/*            <img src={post.image} alt={post.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />*/}
+      {/*          </div>*/}
+      {/*          <div className="text-sm text-slate-500 mb-2">{post.date}</div>*/}
+      {/*          <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">{post.title}</h3>*/}
+      {/*          <p className="text-slate-600 line-clamp-2">{post.excerpt}</p>*/}
+      {/*        </div>*/}
+      {/*      ))}*/}
+      {/*    </div>*/}
+      {/*  </div>*/}
+      {/*</section>*/}
 
       {/* --- CONTACT & CTA --- */}
       <section id="contact" className="section-padding bg-white">

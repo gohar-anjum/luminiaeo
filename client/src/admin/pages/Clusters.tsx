@@ -157,7 +157,7 @@ const Clusters: React.FC = () => {
               onClick: () => setSelectedId(c.id),
               style: {
                 cursor: 'pointer',
-                background: selectedId === c.id ? 'rgba(91,127,255,0.08)' : undefined,
+                background: selectedId === c.id ? 'var(--accent-faint-bg)' : undefined,
               },
             })}
             renderRow={(c) => (

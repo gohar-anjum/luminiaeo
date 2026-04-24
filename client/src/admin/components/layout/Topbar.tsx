@@ -1,4 +1,6 @@
 import React from 'react';
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
 import type { AdminPage } from '../../types';
 
 const PAGE_META: Record<AdminPage, { title: string; crumb: string }> = {
@@ -22,6 +24,7 @@ interface TopbarProps {
 }
 
 const Topbar: React.FC<TopbarProps> = ({ activePage }) => {
+  const { theme, toggleTheme } = useTheme();
   const meta = PAGE_META[activePage];
   return (
     <div style={{
@@ -43,6 +46,20 @@ const Topbar: React.FC<TopbarProps> = ({ activePage }) => {
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)', animation: 'pulse 2.5s ease-in-out infinite' }} />
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)' }}>HEALTHY</span>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title={theme === 'light' ? 'Switch to night mode' : 'Switch to day mode'}
+          aria-label={theme === 'light' ? 'Switch to night mode' : 'Switch to day mode'}
+          style={{
+            width: 32, height: 32, borderRadius: 'var(--r)',
+            background: 'var(--card)', border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'var(--text)', transition: 'all 0.15s',
+          }}
+        >
+          {theme === 'light' ? <Moon size={16} strokeWidth={2} /> : <Sun size={16} strokeWidth={2} />}
+        </button>
         <div
           title="Refresh"
           onClick={() => window.location.reload()}

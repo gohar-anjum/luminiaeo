@@ -35,6 +35,7 @@ import BillingSuccess from "@/pages/BillingSuccess";
 import BillingCancel from "@/pages/BillingCancel";
 import Settings from "@/pages/Settings";
 import AdminPanel from "@/admin/AdminPanel";
+import { AdminLuminiaRoot } from "@/admin/components/AdminLuminiaRoot";
 import { parseAdminPageParam } from "@/admin/types";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -190,23 +191,23 @@ function Router() {
       {/* Admin Route */}
       <Route path="/admin">
         <AdminProtectedRoute>
-          <div className="luminia-admin">
-            <AdminPanel 
-              page="dashboard" 
-              onNavigate={(p) => window.location.href = `/admin/${p}`} 
+          <AdminLuminiaRoot>
+            <AdminPanel
+              page="dashboard"
+              onNavigate={(p) => window.location.href = `/admin/${p}`}
             />
-          </div>
+          </AdminLuminiaRoot>
         </AdminProtectedRoute>
       </Route>
       <Route path="/admin/:page">
         {(params) => (
           <AdminProtectedRoute>
-            <div className="luminia-admin">
-              <AdminPanel 
-                page={parseAdminPageParam(params.page)} 
-                onNavigate={(p) => window.location.href = `/admin/${p}`} 
+            <AdminLuminiaRoot>
+              <AdminPanel
+                page={parseAdminPageParam(params.page)}
+                onNavigate={(p) => window.location.href = `/admin/${p}`}
               />
-            </div>
+            </AdminLuminiaRoot>
           </AdminProtectedRoute>
         )}
       </Route>

@@ -32,19 +32,19 @@ export function Footer() {
               <li><a href="#features" className="hover:text-blue-400 transition-colors">Features</a></li>
               <li><a href="#pricing" className="hover:text-blue-400 transition-colors">Pricing</a></li>
               <li><a href="#how-it-works" className="hover:text-blue-400 transition-colors">How It Works</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition-colors">API Access</a></li>
+              {/*<li><a href="#" className="hover:text-blue-400 transition-colors">API Access</a></li>*/}
             </ul>
           </div>
 
-          <div>
-            <h3 className="text-white font-semibold mb-4">Resources</h3>
-            <ul className="space-y-3 text-sm">
-              <li><a href="#blog" className="hover:text-blue-400 transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition-colors">Documentation</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition-colors">Community</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition-colors">Help Center</a></li>
-            </ul>
-          </div>
+          {/*<div>*/}
+          {/*  <h3 className="text-white font-semibold mb-4">Resources</h3>*/}
+          {/*  <ul className="space-y-3 text-sm">*/}
+          {/*    <li><a href="#blog" className="hover:text-blue-400 transition-colors">Blog</a></li>*/}
+          {/*    <li><a href="#" className="hover:text-blue-400 transition-colors">Documentation</a></li>*/}
+          {/*    <li><a href="#" className="hover:text-blue-400 transition-colors">Community</a></li>*/}
+          {/*    <li><a href="#" className="hover:text-blue-400 transition-colors">Help Center</a></li>*/}
+          {/*  </ul>*/}
+          {/*</div>*/}
 
           <div>
             <h3 className="text-white font-semibold mb-4">Contact</h3>

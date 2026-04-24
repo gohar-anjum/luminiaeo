@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap');
 
+/* Night (default) — same tokens the admin UI was built for */
 .luminia-admin {
   --bg:        #0b0d10;
   --surface:   #12151a;
@@ -15,6 +16,11 @@
   --red:       #f87171;
   --pink:      #f472b6;
   --teal:      #2dd4bf;
+  --row-hover: rgba(255, 255, 255, 0.04);
+  --accent-subtle-bg:    rgba(91, 127, 255, 0.12);
+  --accent-subtle-border: rgba(91, 127, 255, 0.25);
+  --accent-faint-bg:     rgba(91, 127, 255, 0.08);
+  --accent-faint-border:  rgba(91, 127, 255, 0.2);
   --font-head: 'Syne', sans-serif;
   --font-body: 'DM Sans', sans-serif;
   --font-mono: 'DM Mono', monospace;
@@ -23,15 +29,41 @@
   --sidebar:   220px;
 }
 
+/* Day — light surfaces, same accent family */
+.luminia-admin--light {
+  color-scheme: light;
+  --bg:        #ebeef3;
+  --surface:   #f4f5f8;
+  --card:      #ffffff;
+  --border:    #d9dee8;
+  --border2:   #c3cad6;
+  --text:      #111418;
+  --muted:     #5c6474;
+  --accent:    #4d6bf5;
+  --accent2:   #7c3aed;
+  --green:     #059669;
+  --amber:     #d97706;
+  --red:       #dc2626;
+  --pink:      #db2777;
+  --teal:      #0d9488;
+  --row-hover: rgba(15, 23, 42, 0.05);
+  --accent-subtle-bg:     rgba(77, 107, 245, 0.1);
+  --accent-subtle-border: rgba(77, 107, 245, 0.22);
+  --accent-faint-bg:      rgba(77, 107, 245, 0.07);
+  --accent-faint-border:  rgba(77, 107, 245, 0.18);
+}
+
 /* We're letting the main app's css reset handle the base box-sizing */
 
 .luminia-admin {
+  color-scheme: dark;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
   font-size: 14px;
   min-height: 100vh;
   line-height: 1.5;
+  transition: background 0.22s ease, color 0.18s ease;
 }
 
 /* Scrollbar */
@@ -59,7 +91,7 @@
   transition: background 0.1s;
 }
 .luminia-admin tbody tr:last-child { border-bottom: none; }
-.luminia-admin tbody tr:hover { background: rgba(255,255,255,0.03); }
+.luminia-admin tbody tr:hover { background: var(--row-hover); }
 .luminia-admin td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
 
 @keyframes pulse {

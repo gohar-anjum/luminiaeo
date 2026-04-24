@@ -51,14 +51,7 @@ const Billing: React.FC = () => {
         delta: 'Filtered list',
         deltaDir: 'neutral',
         color: 'var(--accent)',
-      },
-      {
-        label: 'Subscriptions',
-        value: subQ.data?.meta.total != null ? subQ.data.meta.total.toLocaleString() : '—',
-        delta: 'GET /admin/subscriptions',
-        deltaDir: 'neutral',
-        color: 'var(--green)',
-      },
+      }
     ];
   }, [txQ.data?.meta, subQ.data?.meta]);
 
@@ -81,7 +74,7 @@ const Billing: React.FC = () => {
 
   return (
     <div>
-      <SectionHeader title="Billing & Credits" subtitle="Credit ledger · subscriptions" />
+      <SectionHeader title="Billing & Credits" subtitle="Credit ledger" />
 
       {txQ.isError && (
         <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{(txQ.error as Error).message}</div>
@@ -91,7 +84,7 @@ const Billing: React.FC = () => {
 
       <Grid cols="1.5fr 1fr">
         <Card>
-          <CardHeader title="Credit transactions" subtitle="GET /api/admin/credit-transactions" />
+          <CardHeader title="Credit transactions"/>
           <FiltersBar>
             <FilterInput
               placeholder="Filter by user_id"
@@ -153,45 +146,45 @@ const Billing: React.FC = () => {
           </div>
         </Card>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Card>
-            <CardHeader title="Subscriptions" subtitle="GET /api/admin/subscriptions" />
-            <Table
-              cols={['ID', 'User', 'Plan', 'Status', 'Period end']}
-              rows={subRows}
-              renderRow={(s) => (
-                <>
-                  <Td mono>{s.id}</Td>
-                  <Td mono>{s.user_id}</Td>
-                  <Td mono>{s.plan}</Td>
-                  <Td><Badge color={s.status === 'active' ? 'green' : 'gray'}>{s.status}</Badge></Td>
-                  <Td mono>{s.current_period_end ? new Date(s.current_period_end).toLocaleString() : '—'}</Td>
-                </>
-              )}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', borderTop: '1px solid var(--border)' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginRight: 'auto' }}>
-                {subMeta
-                  ? `Page ${subMeta.current_page}/${subMeta.last_page}`
-                  : '—'}
-              </span>
-              <Button size="sm" disabled={!subMeta || subMeta.current_page <= 1} onClick={() => setSubPage((p) => Math.max(1, p - 1))}>
-                Prev
-              </Button>
-              <Button
-                size="sm"
-                disabled={!subMeta || subMeta.current_page >= subMeta.last_page}
-                onClick={() => setSubPage((p) => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          </Card>
+        {/*<div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>*/}
+        {/*  <Card>*/}
+        {/*    <CardHeader title="Subscriptions" subtitle="GET /api/admin/subscriptions" />*/}
+        {/*    <Table*/}
+        {/*      cols={['ID', 'User', 'Plan', 'Status', 'Period end']}*/}
+        {/*      rows={subRows}*/}
+        {/*      renderRow={(s) => (*/}
+        {/*        <>*/}
+        {/*          <Td mono>{s.id}</Td>*/}
+        {/*          <Td mono>{s.user_id}</Td>*/}
+        {/*          <Td mono>{s.plan}</Td>*/}
+        {/*          <Td><Badge color={s.status === 'active' ? 'green' : 'gray'}>{s.status}</Badge></Td>*/}
+        {/*          <Td mono>{s.current_period_end ? new Date(s.current_period_end).toLocaleString() : '—'}</Td>*/}
+        {/*        </>*/}
+        {/*      )}*/}
+        {/*    />*/}
+        {/*    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', borderTop: '1px solid var(--border)' }}>*/}
+        {/*      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginRight: 'auto' }}>*/}
+        {/*        {subMeta*/}
+        {/*          ? `Page ${subMeta.current_page}/${subMeta.last_page}`*/}
+        {/*          : '—'}*/}
+        {/*      </span>*/}
+        {/*      <Button size="sm" disabled={!subMeta || subMeta.current_page <= 1} onClick={() => setSubPage((p) => Math.max(1, p - 1))}>*/}
+        {/*        Prev*/}
+        {/*      </Button>*/}
+        {/*      <Button*/}
+        {/*        size="sm"*/}
+        {/*        disabled={!subMeta || subMeta.current_page >= subMeta.last_page}*/}
+        {/*        onClick={() => setSubPage((p) => p + 1)}*/}
+        {/*      >*/}
+        {/*        Next*/}
+        {/*      </Button>*/}
+        {/*    </div>*/}
+        {/*  </Card>*/}
 
-          <Notice type="info">
-            Feature credit prices, purchase rules, and Stripe webhooks are not exposed on admin routes; manage those in the Laravel app or Stripe dashboard.
-          </Notice>
-        </div>
+        {/*  <Notice type="info">*/}
+        {/*    Feature credit prices, purchase rules, and Stripe webhooks are not exposed on admin routes; manage those in the Laravel app or Stripe dashboard.*/}
+        {/*  </Notice>*/}
+        {/*</div>*/}
       </Grid>
     </div>
   );

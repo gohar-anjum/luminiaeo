@@ -130,8 +130,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
                   color: isActive ? 'var(--accent)' : 'var(--muted)',
                   fontSize: 13, fontWeight: isActive ? 500 : 400,
                   transition: 'all 0.15s', marginBottom: 1,
-                  background: isActive ? 'rgba(91,127,255,0.12)' : 'transparent',
-                  border: isActive ? '1px solid rgba(91,127,255,0.25)' : '1px solid transparent',
+                  background: isActive ? 'var(--accent-subtle-bg)' : 'transparent',
+                  border: isActive ? '1px solid var(--accent-subtle-border)' : '1px solid transparent',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
