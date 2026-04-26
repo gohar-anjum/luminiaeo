@@ -115,6 +115,32 @@ export async function apiRequest(
   }
 
   await throwIfResNotOk(res);
+
+  // Some APIs return HTTP 200 with a JSON envelope like `{ status: 422, message, response }`
+  if (res.ok) {
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      let data: any;
+      try {
+        data = await res.clone().json();
+      } catch {
+        return res;
+      }
+      if (
+        data &&
+        typeof data === "object" &&
+        typeof data.status === "number" &&
+        data.status >= 400
+      ) {
+        const msg = messageFromErrorJsonBody(data) || "Request failed";
+        const error = new Error(msg) as any;
+        error.status = data.status;
+        error.response = data;
+        throw error;
+      }
+    }
+  }
+
   return res;
 }
 

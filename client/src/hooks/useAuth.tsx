@@ -175,13 +175,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       password_confirmation: passwordConfirmation,
     });
-    const response = await res.json();
+    const response = (await res.json()) as {
+      status?: number;
+      message?: string;
+      response?: { user?: unknown; auth_token?: string } | null;
+    };
 
-    if (response.status === 200 || response.message) {
-      return;
+    // Envelope errors (e.g. { status: 422, message, response: null } with HTTP 200) are thrown in apiRequest
+    const st = response.status;
+    if (st !== undefined && st !== 200 && st !== 201) {
+      throw new Error(
+        typeof response.message === "string" && response.message.trim()
+          ? response.message
+          : "Registration failed",
+      );
     }
 
-    if (response.response && response.response.user && response.response.auth_token) {
+    if (response.response?.user && response.response?.auth_token) {
       const { auth_token, user: userData } = response.response;
 
       if (auth_token) {
