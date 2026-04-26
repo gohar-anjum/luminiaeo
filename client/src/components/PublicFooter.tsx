@@ -1,5 +1,5 @@
-import { BarChart3 } from "lucide-react";
 import { Link } from "wouter";
+import { BrandMark } from "@/components/BrandMark";
 
 export function PublicFooter() {
   return (
@@ -8,9 +8,7 @@ export function PublicFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-primary-foreground" />
-              </div>
+              <BrandMark size="sm" />
               <span className="font-semibold text-lg">LUMINI AEO</span>
             </div>
             <p className="text-sm text-muted-foreground">

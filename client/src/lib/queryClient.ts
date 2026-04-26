@@ -1,6 +1,7 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { getApiUrl, USE_MOCK_API, shouldUseRealAPI } from "./apiConfig";
 import { mockFetch } from "@/utils/mockFetch";
+import { tryDispatchEmailUnverified } from "@/lib/api/emailUnverified";
 
 /** Pick first string from Laravel-style `errors: { field: string[] }` payloads. */
 function firstFieldError(errors: unknown): string | null {
@@ -34,6 +35,7 @@ async function throwIfResNotOk(res: Response) {
         if (fromBody) {
           errorMessage = fromBody;
         }
+        tryDispatchEmailUnverified(res.status, errorData);
       } else {
         const text = await res.text();
         if (text) {
@@ -132,6 +134,7 @@ export async function apiRequest(
         typeof data.status === "number" &&
         data.status >= 400
       ) {
+        tryDispatchEmailUnverified(data.status, data);
         const msg = messageFromErrorJsonBody(data) || "Request failed";
         const error = new Error(msg) as any;
         error.status = data.status;
@@ -188,6 +191,7 @@ export function getQueryFn<T>(options: {
         if (data.status >= 200 && data.status < 300) {
           return data.response as T;
         } else {
+          tryDispatchEmailUnverified(data.status, data);
           throw new Error(data.message || "API request failed");
         }
       }

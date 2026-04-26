@@ -6,7 +6,8 @@ export interface ApiResponse<T> {
   response: T | null;
 }
 
-export interface ApiError {
+/** Error-shaped JSON the API may return (distinct from the `ApiError` class in `client.ts`). */
+export interface ApiErrorBody {
   status: number;
   message: string;
   response: null;

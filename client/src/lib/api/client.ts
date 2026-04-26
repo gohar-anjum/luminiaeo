@@ -1,4 +1,6 @@
 import { getApiUrl } from "@/lib/apiConfig";
+import { tryDispatchEmailUnverified } from "@/lib/api/emailUnverified";
+import { normalizeUserResponse } from "@/lib/api/userResponse";
 import type {
   ApiResponse,
   LoginRequest,
@@ -130,6 +132,7 @@ export class ApiClient {
       if (data.status >= 200 && data.status < 300) {
         return data.response as T;
       } else {
+        tryDispatchEmailUnverified(data.status ?? response.status, data);
         throw new ApiError(
           data.message || "An error occurred",
           data.status || response.status,
@@ -259,7 +262,8 @@ export class ApiClient {
 
     const data = await response.json();
 
-    if (data.status !== 200) {
+    if (data.status !== 200 && data.status !== 201) {
+      tryDispatchEmailUnverified(data.status ?? response.status, data);
       throw new ApiError(
         data.message || "Registration failed",
         data.status || response.status
@@ -268,7 +272,27 @@ export class ApiClient {
   }
 
   async getCurrentUser(): Promise<User> {
-    return this.get<User>("/api/user");
+    const url = getApiUrl("/api/user");
+    const res = await fetch(url, {
+      method: "GET",
+      headers: this.getAuthHeaders(),
+      credentials: "include",
+    });
+    let data: unknown;
+    try {
+      data = await res.json();
+    } catch {
+      throw new ApiError("Invalid response from server", res.status);
+    }
+    if (!res.ok) {
+      tryDispatchEmailUnverified(res.status, data);
+      const msg =
+        data && typeof data === "object" && "message" in data
+          ? String((data as { message: string }).message)
+          : "Request failed";
+      throw new ApiError(msg, res.status, data);
+    }
+    return normalizeUserResponse(data) as unknown as User;
   }
 
   logout(): void {

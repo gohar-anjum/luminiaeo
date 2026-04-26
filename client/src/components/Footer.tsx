@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Twitter, Linkedin, Github, Mail } from "lucide-react";
-import logoImg from "@assets/generated_images/lumini_aeo_logo.png";
+import { BrandMark } from "@/components/BrandMark";
 
 export function Footer() {
   return (
@@ -10,9 +10,7 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded bg-white/10 p-1">
-                <img src={logoImg} alt="Lumini AEO" className="w-full h-full object-contain brightness-0 invert" />
-              </div>
+              <BrandMark size="sm" className="!bg-white" />
               <span className="text-xl font-bold text-white">Lumini AEO</span>
             </Link>
             <p className="text-sm leading-relaxed text-slate-400">
@@ -51,7 +49,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4" />
-                <span>support@lumini-aeo.com</span>
+                <span>luminiaeo@gmail.com</span>
               </li>
               <li>
                 <p>123 Innovation Drive,<br />Tech City, TC 94043</p>

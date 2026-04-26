@@ -1,5 +1,5 @@
-import { BarChart3 } from "lucide-react";
 import { Link } from "wouter";
+import { BrandMark } from "@/components/BrandMark";
 import { Button } from "@/components/ui/button";
 
 export function PublicHeader() {
@@ -8,9 +8,7 @@ export function PublicHeader() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer" data-testid="link-home">
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <BrandMark size="sm" />
             <span className="font-semibold text-lg">LUMINI AEO</span>
           </div>
         </Link>

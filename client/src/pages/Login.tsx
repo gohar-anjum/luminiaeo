@@ -2,28 +2,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, userNeedsEmailVerification } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { BarChart3 } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { useToast } from "@/hooks/use-toast";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 
 export default function Login() {
-  const { login, isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, isLoading: authLoading, user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
-      setLocation(user.is_admin ? "/admin" : "/dashboard");
+      if (user.is_admin) {
+        setLocation("/admin");
+        return;
+      }
+      if (userNeedsEmailVerification(user)) {
+        setLocation("/verify-email");
+        return;
+      }
+      setLocation("/dashboard");
     }
   }, [authLoading, isAuthenticated, user, setLocation]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,13 +50,45 @@ export default function Login() {
     setIsSubmitting(true);
     try {
       const authUser = await login(email, password);
-      setLocation(authUser.is_admin ? "/admin" : "/dashboard");
+      if (authUser.is_admin) {
+        setLocation("/admin");
+      } else if (userNeedsEmailVerification(authUser)) {
+        setLocation("/verify-email");
+      } else {
+        setLocation("/dashboard");
+      }
     } catch (error) {
+      const description =
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : "Sign in failed. Check your email and password.";
       toast({
         title: "Error",
-        description: "Invalid credentials",
+        description,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogle = async (credential: string) => {
+    setIsSubmitting(true);
+    try {
+      const authUser = await loginWithGoogle(credential);
+      if (authUser.is_admin) {
+        setLocation("/admin");
+      } else if (userNeedsEmailVerification(authUser)) {
+        setLocation("/verify-email");
+      } else {
+        setLocation("/dashboard");
+      }
+    } catch (e) {
+      const description =
+        e instanceof Error && e.message.trim()
+          ? e.message
+          : "Google sign-in failed.";
+      toast({ title: "Error", description, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -66,9 +107,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
-              <BarChart3 className="w-7 h-7 text-primary-foreground" />
-            </div>
+            <BrandMark size="lg" artwork="favicon" />
           </div>
           <div>
             <CardTitle className="text-2xl">Welcome back</CardTitle>
@@ -126,6 +165,21 @@ export default function Login() {
               >
                 Sign in
               </Button>
+
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+
+              <GoogleSignInButton
+                clientId={GOOGLE_CLIENT_ID}
+                onCredential={handleGoogle}
+                text="signin_with"
+              />
 
               <div className="text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}

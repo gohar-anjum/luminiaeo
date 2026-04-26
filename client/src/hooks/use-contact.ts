@@ -1,53 +1,67 @@
 import { useMutation } from "@tanstack/react-query";
-import { insertContactSchema, type InsertContact, type Contact } from "@shared/schema";
+import { insertContactSchema, type InsertContact } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { getApiUrl } from "@/lib/apiConfig";
+import { tryDispatchEmailUnverified } from "@/lib/api/emailUnverified";
 
-// Storage key for contacts
-const CONTACTS_STORAGE_KEY = "lumini_contacts";
+type ContactResponse = { id?: number };
 
-// Helper functions for localStorage
-function getContacts(): Contact[] {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem(CONTACTS_STORAGE_KEY);
-  if (!stored) return [];
-  const parsed = JSON.parse(stored);
-  // Convert date strings back to Date objects
-  return parsed.map((c: any) => ({
-    ...c,
-    createdAt: new Date(c.createdAt),
-  }));
-}
-
-function saveContact(contact: Contact): Contact {
-  if (typeof window === "undefined") return contact;
-  const contacts = getContacts();
-  contacts.push(contact);
-  localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
-  return contact;
+/**
+ * Always calls the real `POST /api/contact` route.
+ * With an empty `VITE_API_BASE_URL` (dev default), `getApiUrl` is a same-origin path and Vite’s proxy
+ * forwards to the backend — same as other `/api` calls. We do not use the global mock-API switch here.
+ */
+async function postContact(data: InsertContact): Promise<ContactResponse> {
+  const res = await fetch(getApiUrl("/api/contact"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      name: data.name,
+      email: data.email,
+      message: data.message,
+    }),
+    credentials: "omit",
+  });
+  const body = (await res.json().catch(() => null)) as
+    | { status?: number; message?: string; response?: { id?: number } }
+    | null;
+  if (res.status === 429) {
+    const retry = res.headers.get("Retry-After");
+    throw new Error(
+      retry
+        ? `Too many requests. Try again in about ${retry} seconds.`
+        : "Too many requests. Please wait a moment and try again."
+    );
+  }
+  if (!res.ok) {
+    tryDispatchEmailUnverified(res.status, body);
+    const msg =
+      body && typeof body === "object" && "message" in body && typeof body.message === "string"
+        ? body.message
+        : "Could not send your message.";
+    throw new Error(msg);
+  }
+  if (body && typeof body === "object" && body.status === 201 && body.response) {
+    return { id: body.response.id };
+  }
+  if (body && typeof body === "object" && typeof body.status === "number" && body.status < 300) {
+    return (body.response as ContactResponse) ?? {};
+  }
+  return {};
 }
 
 export function useContactForm() {
   const { toast } = useToast();
-  
+
   return useMutation({
-    mutationFn: async (data: InsertContact): Promise<Contact> => {
-      // Validate with Zod
+    mutationFn: async (data: InsertContact): Promise<ContactResponse> => {
       const validated = insertContactSchema.parse(data);
-      
-      // Create contact object
-      const contact: Contact = {
-        id: Date.now(), // Use timestamp as ID
-        ...validated,
-        createdAt: new Date(),
-      };
-      
-      // Save to localStorage
-      return saveContact(contact);
+      return postContact(validated);
     },
     onSuccess: () => {
       toast({
-        title: "Message Sent",
-        description: "We've received your message and will get back to you shortly.",
+        title: "Message sent",
+        description: "We received your message and will get back to you shortly.",
         variant: "default",
       });
     },
@@ -60,4 +74,3 @@ export function useContactForm() {
     },
   });
 }
-

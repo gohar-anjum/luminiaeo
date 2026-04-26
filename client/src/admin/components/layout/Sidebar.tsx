@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import type { AdminPage } from '../../types';
+import { BrandMark } from '@/components/BrandMark';
 
 function userInitials(name: string, email: string): string {
   const n = name.trim();
@@ -95,7 +96,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
       overflowY: 'auto',
     }}>
       {/* Logo */}
-      <div style={{ padding: '22px 18px 14px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
+      <div style={{ padding: '22px 18px 14px', borderBottom: '1px solid var(--border)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <BrandMark size="sm" className="!bg-white !border-[color:var(--border)]" />
         <span style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--text)' }}>
           LuminiaEO
         </span>

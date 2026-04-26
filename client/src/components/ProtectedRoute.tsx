@@ -1,4 +1,4 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, userNeedsEmailVerification } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 import { PhaseLoader } from "@/components/PhaseLoader";
@@ -25,6 +25,10 @@ export function ProtectedRoute({
       setLocation("/login");
       return;
     }
+    if (forbidAdmin && !requireAdmin && user && userNeedsEmailVerification(user) && !user.is_admin) {
+      setLocation("/verify-email");
+      return;
+    }
     if (requireAdmin && !user?.is_admin) {
       setLocation("/dashboard");
       return;
@@ -32,7 +36,7 @@ export function ProtectedRoute({
     if (forbidAdmin && user?.is_admin) {
       setLocation("/admin");
     }
-  }, [isAuthenticated, isLoading, user?.is_admin, requireAdmin, forbidAdmin, setLocation]);
+  }, [isAuthenticated, isLoading, user, requireAdmin, forbidAdmin, setLocation]);
 
   if (isLoading) {
     return (
@@ -44,6 +48,14 @@ export function ProtectedRoute({
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  if (forbidAdmin && !requireAdmin && user && userNeedsEmailVerification(user) && !user.is_admin) {
+    return (
+      <div className="flex min-h-[50vh] w-full flex-1 items-center justify-center p-8">
+        <PhaseLoader phase="Email verification required…" size="md" />
+      </div>
+    );
   }
 
   if (requireAdmin && !user?.is_admin) {

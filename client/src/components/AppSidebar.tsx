@@ -1,5 +1,4 @@
 import {
-  BarChart3,
   Search,
   FileQuestion,
   CheckCircle2,
@@ -29,6 +28,7 @@ import { Link, useLocation } from "wouter";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { BrandMark } from "@/components/BrandMark";
 
 const menuGroups = [
   {
@@ -88,9 +88,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 border-b">
         <Link href="/dashboard">
           <div className="flex items-center gap-2 cursor-pointer" data-testid="link-logo">
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <BrandMark size="sm" />
             <div>
               <div className="font-semibold text-sm">LUMINI AEO</div>
               <div className="text-xs text-muted-foreground">Answer Engine Optimization</div>

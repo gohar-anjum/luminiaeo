@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronRight, LogOut } from "lucide-react";
-import logoImg from "@assets/generated_images/lumini_aeo_logo.png";
+import { BrandMark } from "@/components/BrandMark";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -59,9 +59,7 @@ export function Navbar() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-            <div className="relative w-10 h-10 overflow-hidden rounded-lg bg-white shadow-sm border border-slate-100 p-1">
-              <img src={logoImg} alt="Lumini AEO" className="w-full h-full object-contain" />
-            </div>
+            <BrandMark size="md" />
             <span className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-primary transition-colors">
               Lumini AEO
             </span>

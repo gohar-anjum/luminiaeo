@@ -1,5 +1,6 @@
 import { getApiUrl } from "@/lib/apiConfig";
 import { ApiError } from "@/lib/api/client";
+import { tryDispatchEmailUnverified } from "@/lib/api/emailUnverified";
 import type {
   AdminActivityAnalysisQuery,
   AdminActivityCatalogResponse,
@@ -48,10 +49,10 @@ function authToken(): string | null {
   return localStorage.getItem("auth_token");
 }
 
-function toQueryString(params: Record<string, string | number | boolean | undefined>): string {
+function toQueryString(params: object): string {
   const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === "") continue;
+  for (const [k, v] of Object.entries(params as Record<string, unknown>)) {
+    if (v === undefined || v === "" || v === null) continue;
     sp.set(k, String(v));
   }
   const s = sp.toString();
@@ -99,6 +100,7 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!res.ok) {
+    tryDispatchEmailUnverified(res.status, parsed);
     const msg =
       parsed && typeof parsed === "object" && parsed !== null && "message" in parsed
         ? String((parsed as { message: string }).message)

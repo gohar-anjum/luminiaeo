@@ -32,6 +32,7 @@ export default function Billing() {
   const [balance, setBalance] = useState<number | null>(null);
   const [purchaseRules, setPurchaseRules] = useState<{
     min_credits: number;
+    max_credits: number;
     credit_increment: number;
     cents_per_credit: number;
   } | null>(null);

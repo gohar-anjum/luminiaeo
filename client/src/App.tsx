@@ -16,8 +16,11 @@ import NotFound from "@/pages/NotFound";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
+import VerifyEmail from "@/pages/VerifyEmail";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import { EmailUnverifiedListener } from "@/components/EmailUnverifiedListener";
+import { EmailVerifiedQueryHandler } from "@/components/EmailVerifiedQueryHandler";
 
 import Dashboard from "@/pages/Dashboard";
 import KeywordResearch from "@/pages/KeywordResearch";
@@ -61,11 +64,15 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
 function Router() {
   return (
-    <Switch>
+    <>
+      <EmailUnverifiedListener />
+      <EmailVerifiedQueryHandler />
+      <Switch>
       {/* Public Routes */}
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
 
@@ -214,7 +221,8 @@ function Router() {
 
       {/* 404 */}
       <Route component={NotFound} />
-    </Switch>
+      </Switch>
+    </>
   );
 }
 

@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useLocation } from "wouter";
-import { BarChart3, ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
 import { ContentAreaLoader } from "@/components/ContentAreaLoader";
@@ -53,9 +54,7 @@ export default function ForgotPassword() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
-              <BarChart3 className="w-7 h-7 text-primary-foreground" />
-            </div>
+            <BrandMark size="lg" />
           </div>
           <div>
             <CardTitle className="text-2xl">Forgot Password</CardTitle>
