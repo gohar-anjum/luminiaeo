@@ -56,6 +56,22 @@ export interface AdminUserRow {
   suspended_at: string | null;
   credits_balance: number;
   created_at: string;
+  email_verified_at?: string | null;
+}
+
+/** POST /api/admin/users/{id}/adjust-credits — 200 */
+export interface AdminCreditLedgerTransaction {
+  id: number;
+  type: string;
+  amount: number;
+  balance_after: number;
+  user_id: number;
+  created_at: string;
+}
+
+export interface AdminAdjustCreditsResponse {
+  user: AdminUserRow;
+  transaction: AdminCreditLedgerTransaction;
 }
 
 export type AdminProductActivityCounts = Partial<AdminProductActivityBucket> &

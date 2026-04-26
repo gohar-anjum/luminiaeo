@@ -220,14 +220,32 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({ children }) => (
 );
 
 interface FilterInputProps {
+  id?: string;
   placeholder?: string;
+  type?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  autoComplete?: string;
   style?: CSSProperties;
   value?: string;
   onChange?: React.ChangeEventHandler<HTMLInputElement>;
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 }
-export const FilterInput: React.FC<FilterInputProps> = ({ placeholder, style, value, onChange, onKeyDown }) => (
+export const FilterInput: React.FC<FilterInputProps> = ({
+  id,
+  placeholder,
+  type = 'text',
+  inputMode,
+  autoComplete,
+  style,
+  value,
+  onChange,
+  onKeyDown,
+}) => (
   <input
+    id={id}
+    type={type}
+    inputMode={inputMode}
+    autoComplete={autoComplete}
     placeholder={placeholder}
     value={value}
     onChange={onChange}
@@ -316,15 +334,106 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ initials, gradA, gradB }
 );
 
 // ── Notice ─────────────────────────────────────────────
-interface NoticeProps { type?: 'info' | 'warn'; children: ReactNode; }
+interface NoticeProps { type?: 'info' | 'warn' | 'error'; children: ReactNode; }
 export const Notice: React.FC<NoticeProps> = ({ type = 'info', children }) => {
   const styles: Record<string, CSSProperties> = {
     info: { background: 'var(--accent-faint-bg)', border: '1px solid var(--accent-faint-border)', color: 'var(--accent)' },
     warn: { background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', color: 'var(--amber)' },
+    error: { background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', color: 'var(--red)' },
   };
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 16px', borderRadius: 'var(--r)', fontSize: '12.5px', marginBottom: 16, ...styles[type] }}>
       {children}
+    </div>
+  );
+};
+
+// ── Modal (simple overlay) ────────────────────────────
+interface ModalProps {
+  open: boolean;
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  children: ReactNode;
+  footer?: ReactNode;
+  /** Stop clicks inside the panel from closing (backdrop still closes) */
+  width?: number;
+}
+export const Modal: React.FC<ModalProps> = ({
+  open,
+  title,
+  subtitle,
+  onClose,
+  children,
+  footer,
+  width = 440,
+}) => {
+  if (!open) return null;
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        background: 'rgba(8, 12, 20, 0.55)',
+        backdropFilter: 'blur(2px)',
+      }}
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: width,
+          maxHeight: '90vh',
+          overflow: 'auto',
+          background: 'var(--card)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--r-lg)',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.35)',
+        }}
+      >
+        <div
+          style={{
+            padding: '16px 18px 12px',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+          }}
+        >
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
+            {title}
+          </div>
+          {subtitle && (
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.4 }}>
+              {subtitle}
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '16px 18px' }}>{children}</div>
+        {footer && (
+          <div
+            style={{
+              padding: '12px 18px 16px',
+              borderTop: '1px solid var(--border)',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 8,
+              flexWrap: 'wrap',
+            }}
+          >
+            {footer}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

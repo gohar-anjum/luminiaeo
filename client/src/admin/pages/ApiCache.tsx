@@ -11,6 +11,7 @@ const ApiCache: React.FC = () => {
   const [page, setPage] = useState(1);
   const [userId, setUserId] = useState('');
   const [endpoint, setEndpoint] = useState('');
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const statsQ = useQuery({
     queryKey: ['admin', 'dashboard', 'stats'],
@@ -56,6 +57,7 @@ const ApiCache: React.FC = () => {
   const meta = logsQ.data?.meta;
 
   const exportLogs = async () => {
+    setExportError(null);
     try {
       await adminApi.exportApiLogs({
         method: 'POST',
@@ -63,13 +65,19 @@ const ApiCache: React.FC = () => {
         ...(endpoint.trim() ? { endpoint: endpoint.trim() } : {}),
       });
     } catch (e) {
-      window.alert((e as Error).message);
+      setExportError((e as Error).message || 'Export failed');
     }
   };
 
   return (
     <div>
       <SectionHeader title="API Cache" subtitle="Dashboard hit rate · upstream API logs" />
+
+      {exportError && (
+        <div style={{ marginBottom: 12 }}>
+          <Notice type="error">{exportError}</Notice>
+        </div>
+      )}
 
       {statsQ.isError && (
         <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{(statsQ.error as Error).message}</div>

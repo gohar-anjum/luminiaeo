@@ -42,6 +42,7 @@ import type {
   AdminUserRow,
   AdminUsersListResponse,
   AdminUsersQuery,
+  AdminAdjustCreditsResponse,
 } from "./adminTypes";
 
 function authToken(): string | null {
@@ -248,10 +249,22 @@ export const adminApi = {
     return adminFetch(`/api/admin/users/${id}/unsuspend`, { method: "POST", body: "{}" });
   },
 
-  adjustCredits(id: number, amount: number): Promise<AdminUserRow> {
-    return adminFetch(`/api/admin/users/${id}/adjust-credits`, {
+  /**
+   * POST /api/admin/users/{id}/adjust-credits
+   * Positive `amount` adds credits, negative deducts. Optional `note` (max 2000) for audit.
+   */
+  adjustCredits(
+    id: number,
+    body: { amount: number; note?: string }
+  ): Promise<AdminAdjustCreditsResponse> {
+    const { amount, note } = body;
+    const payload: { amount: number; note?: string } = { amount: Math.trunc(amount) };
+    if (note != null && String(note).trim() !== "") {
+      payload.note = String(note).trim().slice(0, 2000);
+    }
+    return adminFetch<AdminAdjustCreditsResponse>(`/api/admin/users/${id}/adjust-credits`, {
       method: "POST",
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify(payload),
     });
   },
 

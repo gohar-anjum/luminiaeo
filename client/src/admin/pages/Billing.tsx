@@ -21,6 +21,7 @@ const Billing: React.FC = () => {
   const [subPage, setSubPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState('');
   const [userIdFilter, setUserIdFilter] = useState('');
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const txQuery = useMemo(() => {
     const uid = parseInt(userIdFilter, 10);
@@ -56,6 +57,7 @@ const Billing: React.FC = () => {
   }, [txQ.data?.meta, subQ.data?.meta]);
 
   const exportCsv = async () => {
+    setExportError(null);
     try {
       const uid = parseInt(userIdFilter, 10);
       await adminApi.exportCreditTransactions({
@@ -63,7 +65,7 @@ const Billing: React.FC = () => {
         ...(userIdFilter !== '' && Number.isFinite(uid) ? { user_id: uid } : {}),
       });
     } catch (e) {
-      window.alert((e as Error).message);
+      setExportError((e as Error).message || 'Export failed');
     }
   };
 
@@ -75,6 +77,12 @@ const Billing: React.FC = () => {
   return (
     <div>
       <SectionHeader title="Billing & Credits" subtitle="Credit ledger" />
+
+      {exportError && (
+        <div style={{ marginBottom: 12 }}>
+          <Notice type="error">{exportError}</Notice>
+        </div>
+      )}
 
       {txQ.isError && (
         <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{(txQ.error as Error).message}</div>

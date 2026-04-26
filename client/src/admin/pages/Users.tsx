@@ -7,6 +7,7 @@ import {
 import { adminApi } from '@/lib/api/adminClient';
 import type { AdminUserRow } from '@/lib/api/adminTypes';
 import type { StatCard } from '../types';
+import { AdjustCreditsModal } from '../components/AdjustCreditsModal';
 
 function initials(name: string): string {
   const p = name.trim().split(/\s+/);
@@ -23,6 +24,7 @@ const Users: React.FC = () => {
   const [searchDraft, setSearchDraft] = useState('');
   const [suspended, setSuspended] = useState<'any' | 'yes' | 'no'>('any');
   const [detailUserId, setDetailUserId] = useState<number | null>(null);
+  const [creditUser, setCreditUser] = useState<AdminUserRow | null>(null);
 
   const query = useMemo(
     () => ({
@@ -65,26 +67,25 @@ const Users: React.FC = () => {
     onSuccess: invalidate,
   });
   const creditsM = useMutation({
-    mutationFn: ({ id, amount }: { id: number; amount: number }) => adminApi.adjustCredits(id, amount),
-    onSuccess: invalidate,
+    mutationFn: (p: { id: number; amount: number; note?: string }) => adminApi.adjustCredits(p.id, p),
+    onSuccess: (_data) => {
+      void invalidate();
+    },
   });
-
-  const runCredits = (u: AdminUserRow) => {
-    const raw = window.prompt(`Adjust credits for ${u.email} (negative to deduct):`, '0');
-    if (raw === null) return;
-    const amount = parseInt(raw, 10);
-    if (Number.isNaN(amount) || amount === 0) {
-      window.alert('Enter a non-zero integer.');
-      return;
-    }
-    creditsM.mutate({ id: u.id, amount });
-  };
 
   const rows = listQ.data?.data ?? [];
   const meta = listQ.data?.meta;
 
   return (
     <div>
+      <AdjustCreditsModal
+        user={creditUser}
+        onClose={() => {
+          setCreditUser(null);
+          creditsM.reset();
+        }}
+        mutation={creditsM}
+      />
       <SectionHeader title="Users" subtitle="GET /api/admin/users · product activity on detail" />
 
       {listQ.isError && (
@@ -150,9 +151,15 @@ const Users: React.FC = () => {
                 <Td mono>{new Date(u.created_at).toLocaleString()}</Td>
                 <Td>
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    <Button size="sm" onClick={() => runCredits(u)} disabled={creditsM.isPending}>
-                      Credits
-                    </Button>
+                    <span title={u.is_admin ? 'Cannot adjust staff/admin credits via this action' : undefined}>
+                      <Button
+                        size="sm"
+                        onClick={() => setCreditUser(u)}
+                        disabled={creditsM.isPending || u.is_admin}
+                      >
+                        Credits
+                      </Button>
+                    </span>
                     {!u.suspended_at ? (
                       <Button
                         size="sm"
