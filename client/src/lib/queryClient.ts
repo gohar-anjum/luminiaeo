@@ -2,6 +2,25 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { getApiUrl, USE_MOCK_API, shouldUseRealAPI } from "./apiConfig";
 import { mockFetch } from "@/utils/mockFetch";
 
+/** Pick first string from Laravel-style `errors: { field: string[] }` payloads. */
+function firstFieldError(errors: unknown): string | null {
+  if (!errors || typeof errors !== "object" || Array.isArray(errors)) return null;
+  for (const v of Object.values(errors as Record<string, unknown>)) {
+    if (Array.isArray(v) && v.length > 0 && typeof v[0] === "string") return v[0];
+    if (typeof v === "string") return v;
+  }
+  return null;
+}
+
+function messageFromErrorJsonBody(data: any): string | null {
+  if (!data || typeof data !== "object") return null;
+  const fromFields = firstFieldError((data as { errors?: unknown }).errors);
+  if (fromFields) return fromFields;
+  if (typeof data.message === "string" && data.message.trim()) return data.message.trim();
+  if (typeof data.error === "string" && data.error.trim()) return data.error.trim();
+  return null;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let errorMessage = res.statusText;
@@ -11,11 +30,9 @@ async function throwIfResNotOk(res: Response) {
       const contentType = res.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         errorData = await res.json();
-        // Handle standard API error format
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
+        const fromBody = messageFromErrorJsonBody(errorData);
+        if (fromBody) {
+          errorMessage = fromBody;
         }
       } else {
         const text = await res.text();

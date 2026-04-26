@@ -67,9 +67,13 @@ export default function Signup() {
       });
       setLocation("/login");
     } catch (error) {
+      const description =
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : "Failed to create an account. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to create account",
+        description,
         variant: "destructive",
       });
     } finally {
