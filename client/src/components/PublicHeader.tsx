@@ -8,7 +8,7 @@ export function PublicHeader() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer" data-testid="link-home">
-            <BrandMark size="sm" />
+            <BrandMark />
             <span className="font-semibold text-lg">LUMINI AEO</span>
           </div>
         </Link>

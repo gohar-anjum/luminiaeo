@@ -97,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
     }}>
       {/* Logo */}
       <div style={{ padding: '22px 18px 14px', borderBottom: '1px solid var(--border)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <BrandMark size="sm" className="!bg-white !border-[color:var(--border)]" />
+        <BrandMark className="!bg-white !border-[color:var(--border)]" />
         <span style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--text)' }}>
           LuminiaEO
         </span>

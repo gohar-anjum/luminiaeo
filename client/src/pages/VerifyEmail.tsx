@@ -71,7 +71,7 @@ export default function VerifyEmail() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <BrandMark size="lg" />
+            <BrandMark />
           </div>
           <div>
             <CardTitle className="text-2xl">Verify your email</CardTitle>

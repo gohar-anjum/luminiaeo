@@ -7,10 +7,7 @@ export function PublicFooter() {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <BrandMark size="sm" />
-              <span className="font-semibold text-lg">LUMINI AEO</span>
-            </div>
+            <BrandMark alt="Lumini AEO" />
             <p className="text-sm text-muted-foreground">
               Professional Answer Engine Optimization platform for the AI era.
             </p>

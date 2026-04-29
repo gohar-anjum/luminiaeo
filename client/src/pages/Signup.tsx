@@ -133,7 +133,7 @@ export default function Signup() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <BrandMark size="lg" artwork="favicon" />
+            <BrandMark artwork="favicon" />
           </div>
           <div>
             <CardTitle className="text-2xl">Create an account</CardTitle>

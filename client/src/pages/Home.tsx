@@ -1,20 +1,23 @@
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ContactForm } from "@/components/ContactForm";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { 
-  Search, 
-  BarChart2, 
-  Cpu, 
-  Zap, 
-  Database, 
-  Globe, 
-  CheckCircle2, 
+import {
+  Search,
+  CheckCircle2,
   ArrowRight,
   TrendingUp,
-  CreditCard
+  CreditCard,
+  Zap,
+  FileQuestion,
+  Tag,
+  FileText,
+  Eye,
+  Network,
+  Shield,
 } from "lucide-react";
 
 // Animation variants
@@ -32,6 +35,95 @@ const staggerContainer = {
     }
   }
 };
+
+const heroKpis = [
+  {
+    value: "60%",
+    lines: [
+      "of Google",
+      "queries now",
+      "show AI",
+      "summaries",
+    ],
+    citation: "(AWR, 2025)",
+  },
+  {
+    value: "47%",
+    lines: [
+      "drop in clicks",
+      "when AI summary",
+      "appears",
+    ],
+    citation: "(Pew, 2025)",
+  },
+  {
+    value: "8",
+    lines: [
+      "integrated",
+      "AEO tools",
+      "in one",
+      "dashboard",
+    ],
+    citation: null,
+  },
+  {
+    value: "4",
+    lines: [
+      "AI engines",
+      "tracked",
+      "(ChatGPT, Gemini,",
+      "Perplexity, Claude)",
+    ],
+    citation: null,
+  },
+] as const;
+
+const landingFeatures: {
+  icon: ReactNode;
+  title: string;
+  desc: string;
+}[] = [
+  {
+    icon: <Search className="w-6 h-6 text-blue-600" />,
+    title: "Keyword Research",
+    desc: "Discover and prioritize keywords with clustering, SERP context, and intent signals built for AI answer engines.",
+  },
+  {
+    icon: <FileQuestion className="w-6 h-6 text-indigo-600" />,
+    title: "FAQ & facts generator",
+    desc: "Generate structured FAQs and factual Q&A snippets your pages can surface to models and rich results.",
+  },
+  {
+    icon: <Tag className="w-6 h-6 text-purple-600" />,
+    title: "Meta tag optimizer",
+    desc: "Rewrite titles and descriptions with constraints so snippets stay compelling in classic SERPs and AI overviews.",
+  },
+  {
+    icon: <CheckCircle2 className="w-6 h-6 text-emerald-600" />,
+    title: "Semantic score checker",
+    desc: "Score how well a page aligns with topical depth, entities, and answer-style coverage—not just keywords.",
+  },
+  {
+    icon: <FileText className="w-6 h-6 text-orange-600" />,
+    title: "Content generator",
+    desc: "Draft and expand sections grounded in your research and briefs while keeping tone and layout consistent.",
+  },
+  {
+    icon: <Eye className="w-6 h-6 text-sky-600" />,
+    title: "AI indexability & citations",
+    desc: "Track where you appear across answer engines (e.g. ChatGPT, Gemini, Perplexity, Claude) with citation-centric reporting.",
+  },
+  {
+    icon: <Network className="w-6 h-6 text-amber-600" />,
+    title: "Keyword clustering",
+    desc: "Group related queries into thematic clusters so you can map content and internal links without overlap.",
+  },
+  {
+    icon: <Shield className="w-6 h-6 text-rose-600" />,
+    title: "PBN detector",
+    desc: "Surface footprint and network patterns that often correlate with private blog networks before you build links on bad neighborhoods.",
+  },
+];
 
 export default function Home() {
   return (
@@ -82,19 +174,30 @@ export default function Home() {
               </Button>
             </motion.div>
 
-            {/* Stats/Social Proof */}
-            <motion.div variants={fadeInUp} className="mt-16 pt-8 border-t border-slate-200/60 grid grid-cols-2 md:grid-cols-4 gap-8">
-              {[
-                { label: "Queries Analyzed", value: "10M+" },
-                { label: "Active Users", value: "5,000+" },
-                { label: "Data Points", value: "1B+" },
-                { label: "Money Saved", value: "$2M+" },
-              ].map((stat, i) => (
-                <div key={i}>
-                  <div className="text-3xl font-bold text-slate-900">{stat.value}</div>
-                  <div className="text-sm text-slate-500 font-medium">{stat.label}</div>
-                </div>
-              ))}
+            {/* Industry context — cited stats */}
+            <motion.div
+              variants={fadeInUp}
+              className="mt-16 pt-8 border-t border-slate-200/60 max-w-5xl mx-auto"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-6 text-left">
+                {heroKpis.map((kpi, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="text-3xl font-bold tabular-nums text-slate-900 tracking-tight">
+                      {kpi.value}
+                    </div>
+                    <p className="text-sm text-slate-600 leading-snug">
+                      {kpi.lines.map((line) => (
+                        <span key={line} className="block">
+                          {line}
+                        </span>
+                      ))}
+                    </p>
+                    {kpi.citation ? (
+                      <p className="text-xs text-slate-400 pt-1">{kpi.citation}</p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
             </motion.div>
           </motion.div>
         </div>
@@ -108,39 +211,8 @@ export default function Home() {
             <p className="text-lg text-slate-600">Everything you need to optimize your content for AI search engines like ChatGPT, Gemini, and Perplexity.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { 
-                icon: <Search className="w-6 h-6 text-blue-600" />, 
-                title: "Keyword Research", 
-                desc: "Discover high-intent questions users are actually asking AI models." 
-              },
-              { 
-                icon: <Database className="w-6 h-6 text-indigo-600" />, 
-                title: "FAQ Generator", 
-                desc: "Automatically generate structured data and FAQ schemas that AI loves." 
-              },
-              { 
-                icon: <BarChart2 className="w-6 h-6 text-purple-600" />, 
-                title: "Semantic Score", 
-                desc: "Get a 0-100 score on how well your content answers user intent." 
-              },
-              { 
-                icon: <Cpu className="w-6 h-6 text-emerald-600" />, 
-                title: "AI Indexability", 
-                desc: "Check if your site is blocking or allowing AI scrapers effectively." 
-              },
-              { 
-                icon: <Globe className="w-6 h-6 text-orange-600" />, 
-                title: "Entity Mapping", 
-                desc: "Visualize how AI connects your brand to related topics and entities." 
-              },
-              { 
-                icon: <Zap className="w-6 h-6 text-yellow-600" />, 
-                title: "Instant Audit", 
-                desc: "One-click technical audit for both traditional SEO and AEO factors." 
-              },
-            ].map((feature, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {landingFeatures.map((feature, i) => (
               <motion.div 
                 key={i}
                 initial={{ opacity: 0, y: 20 }}

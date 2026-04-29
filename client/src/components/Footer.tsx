@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Twitter, Linkedin, Github, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 
 export function Footer() {
@@ -9,18 +9,12 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-2">
-              <BrandMark size="sm" className="!bg-white" />
-              <span className="text-xl font-bold text-white">Lumini AEO</span>
+            <Link href="/" aria-label="Lumini AEO home" className="inline-flex">
+              <BrandMark className="!bg-white" />
             </Link>
             <p className="text-sm leading-relaxed text-slate-400">
               The affordable answer-engine optimization platform for everyone. Master the future of search.
             </p>
-            <div className="flex space-x-4 pt-2">
-              <a href="#" className="hover:text-white transition-colors"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-white transition-colors"><Linkedin className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-white transition-colors"><Github className="w-5 h-5" /></a>
-            </div>
           </div>
 
           {/* Links */}

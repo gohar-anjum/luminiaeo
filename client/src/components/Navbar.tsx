@@ -58,11 +58,12 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-            <BrandMark size="md" />
-            <span className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-primary transition-colors">
-              Lumini AEO
-            </span>
+          <Link
+            href="/"
+            aria-label="Lumini AEO home"
+            className="inline-flex cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <BrandMark />
           </Link>
 
           {/* Desktop Nav */}
