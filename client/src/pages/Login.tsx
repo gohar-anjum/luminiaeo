@@ -107,12 +107,12 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <BrandMark artwork="favicon" />
+            <BrandMark />
           </div>
           <div>
             <CardTitle className="text-2xl">Welcome back</CardTitle>
             <CardDescription>
-              Sign in to your LUMINI AEO account
+              Sign in to your account
             </CardDescription>
           </div>
         </CardHeader>

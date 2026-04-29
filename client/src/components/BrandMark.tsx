@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 type BrandMarkSize = "xs" | "sm" | "md" | "lg";
 
 const box: Record<BrandMarkSize, string> = {
@@ -52,11 +54,17 @@ export function BrandMark({
   const tile =
     variant === "card"
       ? "bg-primary flex items-center justify-center"
-      : // Avoid bg-white/shadow — that reads as “image has a grey/white backdrop” behind a transparent PNG.
-        "border-0 bg-transparent shadow-none";
+      : "border-0 !bg-transparent shadow-none";
   return (
     <div
-      className={`flex shrink-0 items-center justify-center overflow-hidden ${rounded} ${padding} ${box[size]} ${tile} ${className}`.trim()}
+      className={cn(
+        "flex shrink-0 items-center justify-center overflow-hidden",
+        rounded,
+        padding,
+        box[size],
+        tile,
+        className,
+      )}
     >
       <img src={src} alt={alt} className="h-full w-full object-contain" />
     </div>

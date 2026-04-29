@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 export function PublicHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/">
-          <div className="flex items-center gap-2 cursor-pointer" data-testid="link-home">
-            <BrandMark />
-            <span className="font-semibold text-lg">LUMINI AEO</span>
-          </div>
+      <div className="container mx-auto flex min-h-24 items-center justify-between gap-4 px-4 py-3">
+        <Link
+          href="/"
+          className="inline-flex cursor-pointer shrink-0"
+          data-testid="link-home"
+          aria-label="Home"
+        >
+          <BrandMark />
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">

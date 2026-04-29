@@ -40,7 +40,7 @@ const Topbar: React.FC<TopbarProps> = ({ activePage }) => {
           {meta.title}
         </div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-          LuminiaEO / <span style={{ color: 'var(--accent)' }}>{meta.crumb}</span>
+          <span style={{ color: 'var(--accent)' }}>{meta.crumb}</span>
         </div>
       </div>
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>

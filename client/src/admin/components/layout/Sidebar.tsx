@@ -96,16 +96,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
       overflowY: 'auto',
     }}>
       {/* Logo */}
-      <div style={{ padding: '22px 18px 14px', borderBottom: '1px solid var(--border)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <BrandMark className="!bg-white !border-[color:var(--border)]" />
-        <span style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--text)' }}>
-          LuminiaEO
-        </span>
+      <div style={{ padding: '22px 18px 14px', borderBottom: '1px solid var(--border)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <BrandMark className="border border-[color:var(--border)]" />
         <span style={{
           fontFamily: 'var(--font-mono)', fontSize: 9,
           background: 'var(--accent)', color: '#fff',
-          padding: '1px 6px', borderRadius: 20, marginLeft: 6,
-          verticalAlign: 'middle', letterSpacing: '0.5px',
+          padding: '1px 6px', borderRadius: 20,
+          letterSpacing: '0.5px',
         }}>
           ADMIN
         </span>

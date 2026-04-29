@@ -87,12 +87,8 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4 border-b">
         <Link href="/dashboard">
-          <div className="flex items-center gap-2 cursor-pointer" data-testid="link-logo">
+          <div className="flex cursor-pointer" data-testid="link-logo" aria-label="Dashboard">
             <BrandMark />
-            <div>
-              <div className="font-semibold text-sm">LUMINI AEO</div>
-              <div className="text-xs text-muted-foreground">Answer Engine Optimization</div>
-            </div>
           </div>
         </Link>
       </SidebarHeader>

@@ -10,7 +10,7 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link href="/" aria-label="Lumini AEO home" className="inline-flex">
-              <BrandMark className="!bg-white" />
+              <BrandMark />
             </Link>
             <p className="text-sm leading-relaxed text-slate-400">
               The affordable answer-engine optimization platform for everyone. Master the future of search.
