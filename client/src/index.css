@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Cards stacked with gap-/space-y parents: avoid extra margin stacking */
+@layer components {
+  .flex[class*="gap-"] > .shadcn-card,
+  .inline-flex[class*="gap-"] > .shadcn-card,
+  .grid[class*="gap-"] > .shadcn-card {
+    margin-bottom: 0;
+  }
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);

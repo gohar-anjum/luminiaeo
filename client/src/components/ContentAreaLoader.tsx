@@ -22,7 +22,13 @@ export function ContentAreaLoader({
   minHeightClassName = "min-h-[200px]",
 }: ContentAreaLoaderProps) {
   return (
-    <div className={cn("relative", loading ? minHeightClassName : undefined, className)}>
+    <div
+      className={cn(
+        "relative flex flex-col gap-6",
+        loading ? minHeightClassName : undefined,
+        className,
+      )}
+    >
       {children}
       {loading ? (
         <div

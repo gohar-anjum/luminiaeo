@@ -53,7 +53,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
         <AppSidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
           <Topbar />
-          <main className="flex-1 overflow-y-auto bg-background">
+          <main className="flex-1 overflow-y-auto bg-background pb-10 lg:pb-12">
             {children}
           </main>
         </div>
